@@ -1,2 +1,6 @@
 pytest
 pytest-homeassistant-custom-component
+# Needed by the conversation component in tests
+hassil
+home-assistant-intents
+gazetteer-matcher

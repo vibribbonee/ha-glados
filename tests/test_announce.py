@@ -1,0 +1,112 @@
+"""The polite announcer."""
+
+from __future__ import annotations
+
+from unittest.mock import AsyncMock, patch
+
+from custom_components.glados.announce import (
+    AnnounceRequest,
+    Announcer,
+    announcer_media_id,
+)
+from custom_components.glados.const import DEFAULTS
+
+from pytest_homeassistant_custom_component.common import async_mock_service
+
+from .conftest import Home
+
+
+def _announcer(home: Home) -> tuple[Announcer, list]:
+    calls = async_mock_service(home.hass, "assist_satellite", "announce")
+    return Announcer(home.hass, {}), calls
+
+
+async def test_media_id_for_the_announcer_voice() -> None:
+    assert announcer_media_id("tts.piper_2:announcer", "Departure time. Leave now.") == (
+        "media-source://tts/tts.piper_2?message=Departure%20time.%20Leave%20now."
+        "&language=en_US&voice=announcer"
+    )
+
+
+async def test_announcer_reads_facts_with_beeps(home: Home) -> None:
+    announcer, calls = _announcer(home)
+    result = await announcer.async_announce(
+        AnnounceRequest(facts="Departure in fifteen minutes.", voice="announcer")
+    )
+    assert result == {"spoken": True, "reason": "", "speech": "Departure in fifteen minutes.",
+                      "area": home.bedroom}
+    first, last = calls[0].data, calls[-1].data
+    assert first["entity_id"] == "assist_satellite.puck_3"
+    assert first["media_id"].startswith("media-source://tts/tts.piper_2?message=Departure")
+    assert first["preannounce"] is True
+    assert first["preannounce_media_id"] == DEFAULTS["beep_in"]
+    assert last == {"entity_id": "assist_satellite.puck_3",
+                    "media_id": DEFAULTS["beep_out"], "preannounce": False}
+
+
+async def test_own_chime_gets_no_beeps(home: Home) -> None:
+    home.entity("assist_satellite.puck_3", "idle", area=home.bedroom,
+                labels={"glados_own_chime"}, supported_features=3)
+    announcer, calls = _announcer(home)
+    await announcer.async_announce(AnnounceRequest(facts="Hello.", voice="announcer"))
+    assert len(calls) == 1
+    assert calls[0].data["preannounce"] is False
+
+
+async def test_glados_voice_rewrites_and_chimes_in(home: Home) -> None:
+    announcer, calls = _announcer(home)
+    with patch(
+        "custom_components.glados.announce.async_say",
+        AsyncMock(side_effect=["Oh. You're here.", "How thrilling."]),
+    ) as say:
+        result = await announcer.async_announce(AnnounceRequest(facts="Nico is home."))
+        assert result["speech"] == "Oh. You're here."
+        assert "The person in the room is nico." in say.call_args.kwargs["task"]
+        await announcer.async_announce(
+            AnnounceRequest(facts="Warning.", voice="announcer", glados_after="Agree.")
+        )
+    spoken = [c.data.get("message") for c in calls if c.data.get("message")]
+    assert spoken == ["Oh. You're here.", "How thrilling."]
+
+
+async def test_quiet_rules(home: Home) -> None:
+    hass = home.hass
+    announcer, calls = _announcer(home)
+
+    hass.states.async_set("schedule.glados_may_speak_up", "off")
+    result = await announcer.async_announce(AnnounceRequest(facts="x", voice="announcer"))
+    assert result["reason"] == "outside speaking hours"
+    result = await announcer.async_announce(
+        AnnounceRequest(facts="x", voice="announcer", ignore_schedule=True)
+    )
+    assert result["spoken"]
+
+    # A dark bedroom stays quiet even when the schedule is ignored.
+    hass.states.async_set("light.bedroom_main", "off")
+    result = await announcer.async_announce(
+        AnnounceRequest(facts="x", voice="announcer", ignore_schedule=True)
+    )
+    assert result == {"spoken": False, "reason": "the bedroom is dark, people may be asleep",
+                      "speech": "", "area": home.bedroom}
+
+
+async def test_no_free_satellite(home: Home) -> None:
+    hass = home.hass
+    hass.states.async_set("assist_satellite.puck_3", "responding")
+    hass.states.async_set("assist_satellite.office_puck", "listening")
+    announcer, calls = _announcer(home)
+    result = await announcer.async_announce(AnnounceRequest(facts="x", voice="announcer"))
+    assert result["reason"] == "no free voice satellite"
+    assert calls == []
+
+
+async def test_uses_another_room_only_when_allowed(home: Home) -> None:
+    home.hass.states.async_set("assist_satellite.puck_3", "responding")
+    announcer, calls = _announcer(home)
+    result = await announcer.async_announce(
+        AnnounceRequest(facts="x", voice="announcer", anywhere=False)
+    )
+    assert result["reason"] == "no free voice satellite"
+    result = await announcer.async_announce(AnnounceRequest(facts="x", voice="announcer"))
+    assert result["spoken"]
+    assert calls[0].data["entity_id"] == "assist_satellite.office_puck"

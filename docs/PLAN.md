@@ -2,6 +2,68 @@
 
 The goal is to replace the GLaDOS scripts, automations and helpers with one integration. The integration decides what goes into her context, and it cleans every reply before it is spoken.
 
+## Where it stands (27 November 2026)
+
+**Everything GLaDOS does still runs as scripts, automations and helpers in Home Assistant.** Phase 1 of the integration is written and tested (41 tests), but it is not installed in HA yet.
+
+It provides these services:
+
+| Service | Ported from |
+|---|---|
+| `glados.room_context` | `glados_room_context`, same fields |
+| `glados.announce` | `glados_announce`: the quiet rules, both voices, the beeps |
+| `glados.say` | `glados_say`: voice rewrite plus cleanup |
+| `glados.who` | The person lookup duplicated in Set leave time and Set reminder |
+| `glados.remember` / `glados.recall` | The to-do-list memory, now in HA's own storage |
+| `glados.clean_text` | The speech cleanup |
+
+It also adds a **GLaDOS conversation agent**. Pick it as the pipeline's agent: it passes every sentence to the chat agent (GLaDOS Extended), with the conversation, device and satellite, and cleans the reply for speech. This is the reply cleanup from phase 2, without waiting for her own LLM API. The one cost is that the reply is no longer streamed to the voice, so a long answer starts speaking a moment later.
+
+Its settings screen holds the chat agent, the voice agent, the Announcer voice, the beeps, the speaking schedule and the default routine length.
+
+Next:
+
+1. Install it, and set the GLaDOS pipeline's conversation agent to GLaDOS.
+2. Turn each old script into a one-step wrapper around its service, so nothing calling it changes. Compare the results for a day.
+3. Move on to phase 2: her own LLM API, so chat replies are cleaned and the tools compute dates.
+
+The reference copies of the live setup are in `reference/current-setup/`.
+
+### Per person
+
+Each person has their own settings, found by name, so nobody is hard-coded:
+
+| Helper | Meaning | Falls back to |
+|---|---|---|
+| `input_datetime.leave_home_<person>` | Leave time, set by voice | none |
+| `input_number.morning_routine_<person>` | Minutes from alarm to the door | `input_number.morning_routine_minutes` |
+| `todo.<person>_s_list` | Their own reminders | `todo.to_do` |
+
+Adding someone means creating those helpers. The integration should create them automatically for every person with a phone.
+
+### Found in a simulated week of voice commands
+
+| Request | Before | Now |
+|---|---|---|
+| "Leave at 7:45 on Monday" | Set for tomorrow, but said Monday | Weekdays and dates understood; the reply carries the real date |
+| "Remind me tomorrow at 3 to…" | Became a 03:00 leave time | `Set reminder`: a to-do with a due time, read out by the Announcer in their room |
+| "Add oat milk to the shopping list" | Written into the permanent file | Lists exposed, so HA's own list intent is used |
+| "What's on this week?" | Wrong dates (30 instead of 28 November) | Every event carries its weekday, date and "in N days" |
+| "Put the dentist on Tuesday" | No way to do it | `Add to calendar` (default: the calendar labelled `glados`) |
+| "Days until Christmas" | 27 days, from Sinterklaas | Correct from the calendar |
+| "What do you know about me?" | Mixed up calendar birthdays with the user's, invented a trip | Only the permanent file counts as knowing them; a calendar event belongs to whoever it names. The 8B model still sometimes misses a birthday that is in its live list |
+| "Good night" | Read the briefing word for word, no character | The briefing voices itself (two or three things that matter, one remark) and the chat model only gets that line. Automations ask for `plain: true` and keep the raw facts |
+| Chat replies | "km/h", markdown lists | The integration's GLaDOS agent cleans every reply, once installed |
+| Timers | "I cannot set timers" in a satellite-less test | Check on a Puck: HA's local timer intent should handle it before the LLM |
+
+### Still missing compared with a commercial smart speaker
+
+- **Alarms.** Phone alarms can only be read, not set. The kiosk alarms script can set them on the Lenovo.
+- **Music by voice.** `Play music` exists but was not tested, to avoid playing music while someone was home.
+- **Broadcast** ("tell everyone dinner is ready").
+- **A routine word** ("I'm leaving": lights off and a check of what is left on; "I'm home").
+- **Per-person bedtime.** `sensor.bedtime_target` still follows one person's alarm.
+
 ## Why an integration
 
 | Today (scripts and automations) | With the integration |

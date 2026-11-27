@@ -1,14 +1,22 @@
 {
   "domain": "glados",
   "name": "GLaDOS",
-  "after_dependencies": ["assist_satellite", "conversation"],
-  "codeowners": ["@vibribbonee"],
+  "after_dependencies": [
+    "assist_satellite",
+    "tts"
+  ],
+  "codeowners": [
+    "@vibribbonee"
+  ],
   "config_flow": true,
+  "dependencies": [
+    "conversation"
+  ],
   "documentation": "https://github.com/vibribbonee/ha-glados#readme",
   "integration_type": "service",
   "iot_class": "calculated",
   "issue_tracker": "https://github.com/vibribbonee/ha-glados/issues",
   "requirements": [],
   "single_config_entry": true,
-  "version": "0.0.1"
+  "version": "0.1.0"
 }

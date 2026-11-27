@@ -3,21 +3,137 @@
     "step": {
       "user": {
         "title": "GLaDOS",
-        "description": "Add GLaDOS to this home. She will be unbearable about it."
+        "description": "Add GLaDOS to this home. She will be unbearable about it. Voices, sounds and the speaking schedule can be changed afterwards under Configure."
       }
     },
     "abort": {
       "single_instance_allowed": "GLaDOS is already installed. One is plenty."
     }
   },
+  "options": {
+    "step": {
+      "init": {
+        "title": "GLaDOS",
+        "data": {
+          "chat_agent": "Chat agent (answers when you talk to her)",
+          "voice_agent": "Voice agent (rewrites facts in her voice)",
+          "announcer_voice": "Announcer voice (tts.engine:voice)",
+          "beep_in": "Opening beep (media id)",
+          "beep_out": "Closing beep (media id)",
+          "speaking_schedule": "Speaking schedule",
+          "routine_minutes": "Default morning routine"
+        },
+        "data_description": {
+          "chat_agent": "The GLaDOS agent passes each sentence to this agent and cleans its reply for speech. Not GLaDOS itself.",
+          "routine_minutes": "Minutes from alarm to the door, for people without their own Morning routine helper."
+        }
+      }
+    }
+  },
   "services": {
     "clean_text": {
       "name": "Clean text for speech",
-      "description": "Returns the text as one line of plain spoken words: no emoji, quotation marks or markdown, units spelled out, negative numbers as minus, and her name spelled for the voice.",
+      "description": "Makes text safe for the text-to-speech voice: emoji, quotes and markdown removed, units and minus signs spelled out.",
       "fields": {
         "text": {
           "name": "Text",
           "description": "The text to clean."
+        }
+      }
+    },
+    "say": {
+      "name": "Say in her voice",
+      "description": "Rewrites plain facts in GLaDOS's voice and cleans them for speech. Falls back to the facts.",
+      "fields": {
+        "facts": {
+          "name": "Facts",
+          "description": "The plain, correct reply."
+        },
+        "request": {
+          "name": "Request",
+          "description": "What the person said."
+        },
+        "task": {
+          "name": "Task",
+          "description": "An extra job, such as adding a clothing tip."
+        }
+      }
+    },
+    "room_context": {
+      "name": "Room context",
+      "description": "Everything about one room: people, occupancy, sleep, quiet, climate, windows, heaters, coolers and free voice satellites.",
+      "fields": {
+        "area": {
+          "name": "Area",
+          "description": "Empty for the room people are in."
+        }
+      }
+    },
+    "announce": {
+      "name": "Announce",
+      "description": "Says something unprompted in the right room, only when polite. GLaDOS rewrites the facts; the Announcer reads them as written.",
+      "fields": {
+        "facts": {
+          "name": "Facts",
+          "description": "What to say."
+        },
+        "task": {
+          "name": "Task",
+          "description": "Extra instruction for her voice."
+        },
+        "area": {
+          "name": "Area",
+          "description": "Room to speak in. Empty: where people are."
+        },
+        "ignore_schedule": {
+          "name": "Ignore schedule",
+          "description": "Speak outside the speaking schedule. Sleep and quiet rules still apply."
+        },
+        "anywhere": {
+          "name": "Any room if none here",
+          "description": "Use a free satellite elsewhere when the room has none."
+        },
+        "voice": {
+          "name": "Voice",
+          "description": "glados or announcer."
+        },
+        "glados_after": {
+          "name": "GLaDOS chimes in",
+          "description": "With the Announcer: a task for one GLaDOS remark right after."
+        }
+      }
+    },
+    "who": {
+      "name": "Who",
+      "description": "Works out which person is meant (a name, the user asking, or the only one home) and returns their room, phones, leave time, routine minutes and own list.",
+      "fields": {
+        "person": {
+          "name": "Person",
+          "description": "Name; empty for the person asking."
+        }
+      }
+    },
+    "remember": {
+      "name": "Remember",
+      "description": "Stores one value under a key, with the time it was stored.",
+      "fields": {
+        "key": {
+          "name": "Key",
+          "description": "Such as air bedroom."
+        },
+        "value": {
+          "name": "Value",
+          "description": "What to remember."
+        }
+      }
+    },
+    "recall": {
+      "name": "Recall",
+      "description": "Returns a remembered value and when it was stored.",
+      "fields": {
+        "key": {
+          "name": "Key",
+          "description": "Such as air bedroom."
         }
       }
     }

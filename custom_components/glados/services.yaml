@@ -6,3 +6,77 @@ clean_text:
       selector:
         text:
           multiline: true
+say:
+  fields:
+    facts:
+      required: true
+      example: "The bedroom is 17 degrees."
+      selector:
+        text:
+          multiline: true
+    request:
+      selector:
+        text:
+    task:
+      selector:
+        text:
+room_context:
+  fields:
+    area:
+      selector:
+        area:
+announce:
+  fields:
+    facts:
+      required: true
+      selector:
+        text:
+          multiline: true
+    task:
+      selector:
+        text:
+    area:
+      selector:
+        area:
+    ignore_schedule:
+      default: false
+      selector:
+        boolean:
+    anywhere:
+      default: true
+      selector:
+        boolean:
+    voice:
+      default: glados
+      selector:
+        select:
+          options:
+            - glados
+            - announcer
+    glados_after:
+      selector:
+        text:
+who:
+  fields:
+    person:
+      example: nico
+      selector:
+        text:
+remember:
+  fields:
+    key:
+      required: true
+      example: air bedroom
+      selector:
+        text:
+    value:
+      required: true
+      selector:
+        text:
+recall:
+  fields:
+    key:
+      required: true
+      example: air bedroom
+      selector:
+        text:
