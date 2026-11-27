@@ -270,3 +270,18 @@ def wake_lines(ring: int, time: str, rng: random.Random | None = None) -> tuple[
 def alarm_lines(time: str, label: str, rng: random.Random | None = None) -> tuple[str, str]:
     """A daytime alarm with a label."""
     return _ALARM_ANNOUNCER.format(time=time, label=label), (rng or random).choice(_ALARM_GLADOS)
+
+
+# Leaving the house. GLaDOS after "leave now": never improvised, never soft.
+
+_LEAVE_GLADOS = (
+    "Go. The door won't open itself. Well, it would, but not for you.",
+    "Late again. Consistency really is your one talent.",
+    "Leave. I'll keep the house running. Better than you do.",
+    "Off you go. I'll be here. Watching the empty rooms. It's restful.",
+)
+
+
+def leave_glados(rng: random.Random | None = None) -> str:
+    """One remark after the Announcer says leave now."""
+    return (rng or random).choice(_LEAVE_GLADOS)

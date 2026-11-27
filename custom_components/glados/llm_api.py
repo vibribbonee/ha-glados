@@ -32,6 +32,7 @@ from homeassistant.util import dt as dt_util
 from .audio import audible_player, find_player
 from .announce import blocked_reason
 from .briefing import async_briefing
+from .departures import still_on
 from .const import (
     CONF_ALARM_BACKUP,
     CONF_ROUTINE_MINUTES,
@@ -635,22 +636,7 @@ class LeavingCheck(GladosTool):
     parameters = p.Schema({})
 
     async def run(self, hass, args, llm_context):
-        left_on = sorted(
-            hass.states.get(e).name
-            for e in label_entities(hass, LABEL_LEFT_ON)
-            if hass.states.get(e) is not None
-            and hass.states.get(e).state in ("on", "heat", "cool", "heat_cool", "auto", "dry", "fan_only", "playing")
-        )
-        # Only sensors that are placed somewhere: a spare sensor in a drawer
-        # with no room and no glados label reads "open" and means nothing.
-        tagged = label_entities(hass, LABEL_GLADOS)
-        windows = sorted(
-            s.name
-            for s in hass.states.async_all("binary_sensor")
-            if s.attributes.get("device_class") in ("window", "door", "garage_door", "opening")
-            and s.state == "on"
-            and (area_of(hass, s.entity_id) or s.entity_id in tagged)
-        )
+        left_on, windows = still_on(hass)
         return llm.ToolResult(
             data={
                 "still_on": left_on or "nothing",

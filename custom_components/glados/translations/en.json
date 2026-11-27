@@ -39,7 +39,8 @@
           "cold_outside_below": "Cold outside below",
           "alarm_backup_minutes": "Alarm backup after",
           "reminders": "Read out reminders",
-          "bedtime_sensor": "Bedtime sensor"
+          "bedtime_sensor": "Bedtime sensor",
+          "leave_heads_up_minutes": "Leave heads-up"
         },
         "data_description": {
           "chat_agent": "The conversation agent she thinks with, such as an Ollama, OpenAI, Google or Anthropic agent with Assist control on. Not GLaDOS itself.",
@@ -56,7 +57,8 @@
           "cold_outside_below": "Below this outside temperature, a window open for 20 minutes gets a reminder, once per opening; in an empty room, she tells whoever is home.",
           "alarm_backup_minutes": "A morning alarm on a phone that has not been dismissed by then, or a phone that is off or never showed the alarm, rings on the room's speaker.",
           "reminders": "To-dos with a due time on each person's own list and the shared To-do list, said in their room when due, or sent to their phone. What comes due while they sleep goes to the phone and is also said after they wake. Turn off if an automation already does this.",
-          "bedtime_sensor": "Optional: a timestamp sensor with the time to be asleep, mentioned in the bedtime briefing."
+          "bedtime_sensor": "Optional: a timestamp sensor with the time to be asleep, mentioned in the bedtime briefing.",
+          "leave_heads_up_minutes": "Minutes before a person's leave time that the Announcer gives a heads-up. At the time itself it says leave now, with what is still on and open. 0: only leave now."
         }
       }
     }
