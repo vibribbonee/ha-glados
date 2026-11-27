@@ -185,5 +185,7 @@ async def test_leaving_check(home: Home) -> None:
     home.entity("switch.soldering_iron", "on", labels={"glados_left_on"}, friendly_name="Soldering Iron")
     home.hass.states.async_set("binary_sensor.bedroom_window", "on",
                                {"device_class": "window", "friendly_name": "Bedroom window"})
+    # A spare sensor with no room and no label is ignored.
+    home.entity("binary_sensor.contact_sensor_controller", "on", device_class="door")
     data = (await _call(api, "leaving_check")).data
     assert data == {"still_on": ["Soldering Iron"], "open": ["Bedroom window"], "all_clear": False}

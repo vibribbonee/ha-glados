@@ -556,11 +556,15 @@ class LeavingCheck(GladosTool):
             if hass.states.get(e) is not None
             and hass.states.get(e).state in ("on", "heat", "cool", "heat_cool", "auto", "dry", "fan_only", "playing")
         )
+        # Only sensors that are placed somewhere: a spare sensor in a drawer
+        # with no room and no glados label reads "open" and means nothing.
+        tagged = label_entities(hass, LABEL_GLADOS)
         windows = sorted(
             s.name
             for s in hass.states.async_all("binary_sensor")
             if s.attributes.get("device_class") in ("window", "door", "garage_door", "opening")
             and s.state == "on"
+            and (area_of(hass, s.entity_id) or s.entity_id in tagged)
         )
         return llm.ToolResult(
             data={
