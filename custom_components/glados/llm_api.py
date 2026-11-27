@@ -30,6 +30,7 @@ from homeassistant.helpers import device_registry as dr, llm
 from homeassistant.util import dt as dt_util
 
 from .audio import audible_player, find_player
+from .addon import addon_prompts, addon_tools
 from .announce import blocked_reason
 from .briefing import async_briefing
 from .departures import still_on
@@ -704,9 +705,10 @@ class GladosAPI(llm.API):
 
     @override
     async def async_get_api_instance(self, llm_context: llm.LLMContext) -> llm.APIInstance:
+        extra = addon_prompts(self.hass)
         return llm.APIInstance(
             api=self,
-            api_prompt=self.prompt(),
+            api_prompt=f"{self.prompt()} {extra}".strip(),
             llm_context=llm_context,
-            tools=[tool(self.data) for tool in TOOLS],
+            tools=[tool(self.data) for tool in TOOLS] + addon_tools(self.hass, self.data),
         )

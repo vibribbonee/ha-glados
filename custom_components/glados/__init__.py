@@ -33,6 +33,7 @@ from homeassistant.core import (
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers import llm
 
+from .addon import async_start_addons
 from .air import AirWatch
 from .alarms import AlarmClock
 from .departures import Departures
@@ -180,6 +181,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: GladosConfigEntry) -> bo
     entry.async_on_unload(entry.runtime_data.alarms.start())
     entry.async_on_unload(Reminders(hass, entry.runtime_data).start())
     entry.async_on_unload(Departures(hass, entry.runtime_data).start())
+    entry.async_on_unload(async_start_addons(hass, entry.runtime_data))
 
     def data() -> GladosData:
         return entry.runtime_data

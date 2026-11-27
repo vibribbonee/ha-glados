@@ -3,6 +3,7 @@
 ## 0.8.0 (not installed yet)
 
 ### New
+- **Add-ons.** GLaDOS works on her own; anything that needs another integration becomes an add-on: its own integration and repository, with `glados` as a dependency. Add-ons register tools, lines for her instructions and background jobs through `custom_components.glados.addon`, and speak through her announcer, quiet rules and voices. See [docs/ADDONS.md](docs/ADDONS.md).
 - **Leave-time reminders in the integration.** For each person with a `leave_home_<person>` helper, while they are home: a heads-up before (**Leave heads-up**, 15 minutes, with the outside temperature), then "leave now" at the time, by the Announcer in their room, with one GLaDOS remark. New: "leave now" also says what is still on (`glados_left_on`) and which windows and doors are open. Asleep or on Do Not Disturb: their phone. A minute missed during a restart is caught up, up to five minutes late.
 
 ### To do when installing

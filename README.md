@@ -126,6 +126,10 @@ With **GLaDOS** ticked under the chat agent's **Control Home Assistant**, she ge
 | `glados.remember` / `glados.recall` | Her memory, with the time each thing was stored |
 | `glados.clean_text` | Make any text safe for the voice |
 
+## Add-ons
+
+GLaDOS needs only a chat agent. Features that depend on another integration, such as train times, are separate add-ons you install next to her. Writing one: [docs/ADDONS.md](docs/ADDONS.md).
+
 ## Development
 
 ```bash
