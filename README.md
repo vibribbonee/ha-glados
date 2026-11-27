@@ -41,8 +41,9 @@ Under **Configure**, all optional:
 | Opening and closing beep: media ids | No beeps |
 | Speaking schedule: a `schedule` entity; she only speaks up unprompted while it's on | Any time |
 | Default morning routine: minutes from alarm to the door | 35 minutes |
-| CO2 warnings: **Announcer, then GLaDOS**, **GLaDOS alone**, or **Off** | Off |
+| Air and window warnings: **Announcer, then GLaDOS**, **GLaDOS alone**, or **Off** | Off |
 | CO2 reminder: minutes before she reminds you while the air stays bad | 30 minutes; 0 for no reminder |
+| Cold outside below: an open window counts as heating the street | 8 degrees |
 
 Whatever the settings, every reply is cleaned before it's spoken: no emoji, markdown or quotation marks, and units, minus signs and her name are written the way the voice should say them.
 
@@ -54,9 +55,11 @@ The integration doesn't include voice models or game sounds. The GLaDOS and Anno
 - **The facility Announcer** (optional): add a second Piper voice in the same way, then enter it under **Configure → Announcer voice**, for example `tts.piper:announcer`.
 - **Beeps** (optional): put your own sound files in the media folder and enter them as `media-source://media_source/local/<file>`.
 
-## CO2 warnings
+## Air and window warnings
 
-Every room with a CO2 sensor is checked each minute. When the air goes stale (1000 ppm) or critical (1500 ppm) and someone is in the room, she warns there, once. While it stays bad she reminds you after the reminder time. When it's fresh again, she forgets it, quietly. She never warns while someone sleeps, on Do Not Disturb or during a video.
+Every room with a CO2 sensor is checked each minute. When the air goes stale (1000 ppm) or critical (1500 ppm) and someone is in the room, she warns there, once. While it stays bad she reminds you after the reminder time. When it's fresh again and cold outside, she says the window can be closed.
+
+A window open for 20 minutes in the cold gets one reminder per opening: in the room, if someone is there and the air is fine; otherwise wherever people are, naming the window and the room nobody is in. She never warns while someone sleeps, on Do Not Disturb or during a video.
 
 With **Announcer, then GLaDOS**, the facility Announcer reads the warning and GLaDOS remarks on it. With **GLaDOS alone**, she gives the warning herself. The lines are written out rather than improvised, so a real warning is never softened. Try them with the **Test announcement** button, or with `glados.test_announcement` and a pretend `co2` reading.
 

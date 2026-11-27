@@ -97,3 +97,58 @@ async def test_the_minute_check(home: Home, freezer) -> None:
     async_fire_time_changed(home.hass)
     await home.hass.async_block_till_done()
     assert len(calls) == count
+
+
+async def test_window_open_in_the_cold(home: Home, freezer) -> None:
+    from custom_components.glados.rooms import describe
+    watch = await _watch(home.hass)
+    calls = async_mock_service(home.hass, "assist_satellite", "announce")
+    home.hass.states.async_set("sensor.bedroom_co2", "700", {"device_class": "carbon_dioxide"})
+    home.hass.states.async_set("binary_sensor.bedroom_window", "on",
+                               {"device_class": "window", "friendly_name": "Bedroom window"})
+    # Not yet: only open for a few minutes.
+    assert await watch.async_check_windows_here(describe(home.hass, home.bedroom)) is None
+    freezer.tick(timedelta(minutes=21))
+    result = await watch.async_check_windows_here(describe(home.hass, home.bedroom))
+    assert result["spoken"] and "21 minutes" in result["speech"]
+    assert "0 degrees" in result["speech"]  # weather.home reads 0.4
+    # Once per opening.
+    freezer.tick(timedelta(minutes=5))
+    assert await watch.async_check_windows_here(describe(home.hass, home.bedroom)) is None
+    # Warm outside: never.
+    home.hass.states.async_set("binary_sensor.bedroom_window", "off", {"device_class": "window"})
+    home.hass.states.async_set("binary_sensor.bedroom_window", "on", {"device_class": "window"})
+    home.hass.states.async_set("weather.home", "sunny", {"temperature": 15})
+    freezer.tick(timedelta(minutes=30))
+    assert await watch.async_check_windows_here(describe(home.hass, home.bedroom)) is None
+    assert len([c for c in calls if c.data.get("media_id", "").startswith("media-source://tts")]) == 1
+
+
+async def test_window_in_an_empty_room(home: Home, freezer) -> None:
+    from custom_components.glados.rooms import describe
+    watch = await _watch(home.hass, "glados")
+    calls = async_mock_service(home.hass, "assist_satellite", "announce")
+    home.entity("binary_sensor.office_window", "on", area=home.office, device_class="window",
+                friendly_name="Office window")
+    freezer.tick(timedelta(minutes=25))
+    rooms = {a: describe(home.hass, a) for a in (home.bedroom, home.office)}
+    result = await watch.async_check_loose_windows(rooms)
+    # Said where Nico is, about the office, by GLaDOS herself.
+    assert result["spoken"] and result["area"] == home.bedroom
+    assert "Office window in the Office" in result["speech"] and "nobody" in result["speech"]
+    assert calls[0].data["entity_id"] == "assist_satellite.puck_3"
+    assert await watch.async_check_loose_windows(rooms) is None
+
+
+async def test_fresh_again_close_the_window(home: Home) -> None:
+    from custom_components.glados.rooms import describe
+    watch = await _watch(home.hass, "glados")
+    async_mock_service(home.hass, "assist_satellite", "announce")
+    watch.data.memory.set(f"air {home.bedroom}", "critical")
+    home.hass.states.async_set("binary_sensor.bedroom_window", "on",
+                               {"device_class": "window", "friendly_name": "Bedroom window"})
+    home.hass.states.async_set("sensor.bedroom_co2", "700", {"device_class": "carbon_dioxide"})
+    ctx = describe(home.hass, home.bedroom)
+    result = await watch.async_check_room(home.bedroom, "Bedroom", 700, True, "glados", REMIND, ctx)
+    assert result["spoken"] and "breathable again" in result["speech"]
+    assert "close the window" in result["speech"]

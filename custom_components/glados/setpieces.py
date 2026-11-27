@@ -146,3 +146,82 @@ def co2_glados_alone(
     """GLaDOS giving the warning herself, with the room, reading and window."""
     key = "reminder" if reminder else co2_level(ppm)
     return (rng or random).choice(_GLADOS_ALONE[key]).format(room=room, ppm=round(ppm))
+
+
+# Windows open in the cold. {window} is its name, {where} " in the Bedroom" or "",
+# {minutes} how long it has been open, {out} the outside temperature.
+
+_WINDOW_ANNOUNCER = {
+    "open": (
+        "Notice. The {window}{where} has been open for {minutes} minutes. Outside "
+        "temperature: {out} degrees. The heating is now heating the street. Please "
+        "close the window.",
+        "Attention. Thermal containment{where} has been breached for {minutes} minutes. "
+        "It is {out} degrees outside. Please close the {window}. Thank you.",
+    ),
+    "fresh": (
+        "Air quality{where} has been restored. It is {out} degrees outside. Please "
+        "close the window. Thank you for ventilating responsibly.",
+    ),
+    "empty": (
+        "Notice. The {window}{where} has been open for {minutes} minutes. Nobody is "
+        "in that room. It is {out} degrees outside. Please close it.",
+    ),
+}
+
+_WINDOW_GLADOS = {
+    "open": (
+        "I'm sure the neighbours appreciate the free heating.",
+        "Your energy bill and I have something in common. We're both disappointed.",
+        "Heating the outdoors. Ambitious. Pointless, but ambitious.",
+    ),
+    "fresh": (
+        "The point was fresh air. Not frostbite.",
+        "You've ventilated. Well done. Now stop before the plants file a complaint.",
+    ),
+    "empty": (
+        "An empty room, heated to perfection, with the window open. I couldn't have "
+        "designed a worse test myself.",
+        "I'm heating a room nobody is in, for a window nobody closed. Efficient.",
+    ),
+}
+
+_WINDOW_GLADOS_ALONE = {
+    "open": (
+        "The {window}{where} has been open for {minutes} minutes, and it's {out} "
+        "degrees outside. Close it. The street is warm enough now.",
+        "{minutes} minutes of open window at {out} degrees. I'm heating the outdoors on "
+        "your behalf. Close the {window}.",
+    ),
+    "fresh": (
+        "The air{where} is breathable again. It's {out} degrees outside, so close the "
+        "window. Fresh air, not frostbite.",
+    ),
+    "empty": (
+        "The {window}{where} has been open for {minutes} minutes, and nobody is in "
+        "there. It's {out} degrees outside. Go and close it. That room has no one "
+        "left to warm.",
+    ),
+}
+
+
+def window_lines(
+    kind: str,
+    style: str,
+    window: str = "window",
+    room: str = "",
+    minutes: int = 0,
+    out: float = 0,
+    rng: random.Random | None = None,
+) -> tuple[str | None, str]:
+    """(Announcer line or None, GLaDOS line) for an open window: open, fresh or empty."""
+    pick = (rng or random).choice
+    fmt = {
+        "window": window,
+        "where": f" in the {room}" if room else "",
+        "minutes": minutes,
+        "out": round(out),
+    }
+    if style == STYLE_GLADOS:
+        return None, pick(_WINDOW_GLADOS_ALONE[kind]).format(**fmt)
+    return pick(_WINDOW_ANNOUNCER[kind]).format(**fmt), pick(_WINDOW_GLADOS[kind])

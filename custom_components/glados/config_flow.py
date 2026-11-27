@@ -21,6 +21,7 @@ from .const import (
     CONF_BEEP_OUT,
     CONF_CO2_ALERTS,
     CONF_CO2_REMINDER,
+    CONF_COLD_OUTSIDE,
     CONF_CHAT_AGENT,
     CONF_HOME_TOWN,
     CONF_PERSONALITY,
@@ -77,6 +78,14 @@ def _options_schema(current: dict[str, Any]) -> vol.Schema:
                 selector.NumberSelector(
                     selector.NumberSelectorConfig(
                         min=0, max=240, step=5, unit_of_measurement="min",
+                        mode=selector.NumberSelectorMode.BOX,
+                    )
+                )
+            ),
+            vol.Required(CONF_COLD_OUTSIDE, default=float(current[CONF_COLD_OUTSIDE])): (
+                selector.NumberSelector(
+                    selector.NumberSelectorConfig(
+                        min=-20, max=25, step=1, unit_of_measurement="°C",
                         mode=selector.NumberSelectorMode.BOX,
                     )
                 )

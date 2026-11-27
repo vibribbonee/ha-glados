@@ -34,8 +34,9 @@
           "beep_out": "Closing beep",
           "speaking_schedule": "Speaking schedule",
           "routine_minutes": "Default morning routine",
-          "co2_alerts": "CO2 warnings",
-          "co2_reminder_minutes": "CO2 reminder"
+          "co2_alerts": "Air and window warnings",
+          "co2_reminder_minutes": "CO2 reminder",
+          "cold_outside_below": "Cold outside below"
         },
         "data_description": {
           "chat_agent": "The conversation agent she thinks with, such as an Ollama, OpenAI, Google or Anthropic agent with Assist control on. Not GLaDOS itself.",
@@ -47,8 +48,9 @@
           "beep_out": "Media id played after she speaks. Empty: no beep.",
           "speaking_schedule": "She only speaks up unprompted while this schedule is on. Empty: any time, still never while someone sleeps.",
           "routine_minutes": "Minutes from alarm to the door, for people without their own Morning routine helper.",
-          "co2_alerts": "Warn in the room when the air goes stale (1000 ppm) or critical (1500 ppm). Announcer: the facility Announcer warns and GLaDOS replies. GLaDOS: she warns on her own.",
-          "co2_reminder_minutes": "Remind again after this many minutes while the air stays bad. 0: no reminder."
+          "co2_alerts": "Warn in the room when the air goes stale (1000 ppm) or critical (1500 ppm), and when a window stays open in the cold. Announcer: the facility Announcer warns and GLaDOS replies. GLaDOS: she warns on her own.",
+          "co2_reminder_minutes": "Remind again after this many minutes while the air stays bad. 0: no reminder.",
+          "cold_outside_below": "Below this outside temperature, a window open for 20 minutes gets a reminder, once per opening; in an empty room, she tells whoever is home."
         }
       }
     }
