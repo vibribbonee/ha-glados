@@ -10,7 +10,9 @@ the existing scripts can call these instead of their own Jinja:
 - glados.who: work out which person is meant, with their own settings
 - glados.remember / glados.recall: her memory, in HA's own storage
 
-It also adds the GLaDOS conversation agent, which cleans every chat reply.
+It also adds the GLaDOS conversation agent, which cleans every chat reply, and
+her own LLM API with tools for reminders, leave times, the calendar and her
+permanent file (see llm_api.py).
 """
 
 from __future__ import annotations
@@ -29,6 +31,7 @@ from homeassistant.core import (
     SupportsResponse,
 )
 import homeassistant.helpers.config_validation as cv
+from homeassistant.helpers import llm
 
 from .announce import AnnounceRequest, Announcer
 from .const import (
@@ -58,6 +61,7 @@ from .const import (
     VOICE_ANNOUNCER,
     VOICE_GLADOS,
 )
+from .llm_api import GladosAPI
 from .memory import GladosMemory
 from .people import (
     has_leave_helper,
@@ -137,6 +141,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: GladosConfigEntry) -> bo
     options = _options(entry)
     entry.runtime_data = GladosData(memory, Announcer(hass, options), options)
     entry.async_on_unload(entry.add_update_listener(_async_reload))
+    entry.async_on_unload(llm.async_register_api(hass, GladosAPI(hass, entry.runtime_data)))
 
     def data() -> GladosData:
         return entry.runtime_data

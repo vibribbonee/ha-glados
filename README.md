@@ -17,7 +17,8 @@ She does what you'd ask any smart speaker: timers, lights, the weather with a cl
 1. In HACS, open the ⋮ menu → **Custom repositories**, and add `https://github.com/vibribbonee/ha-glados` as an **Integration**.
 2. Download **GLaDOS** and restart Home Assistant.
 3. Go to **Settings → Devices & services → Add integration → GLaDOS**, and pick your chat agent.
-4. In **Settings → Voice assistants**, open your assistant and set its **Conversation agent** to **GLaDOS**. Pick your GLaDOS voice as its text-to-speech voice.
+4. Open your chat agent's settings (for Ollama: **Settings → Devices & services → Ollama**, then the agent's ⚙). Under **Control Home Assistant**, tick **GLaDOS** next to **Assist**, so she gets her own tools.
+5. In **Settings → Voice assistants**, open your assistant and set its **Conversation agent** to **GLaDOS**. Pick your GLaDOS voice as its text-to-speech voice.
 
 Ask her who she is.
 
@@ -73,6 +74,18 @@ For each person, optionally:
 | `todo.<person>_s_list` | Their own reminders | `todo.to_do` |
 
 Rooms of people come from a Bermuda area sensor (`sensor.<phone>_area`) on one of their tracker devices, if you have one.
+
+## Her tools
+
+With **GLaDOS** ticked under the chat agent's **Control Home Assistant**, she gets these besides the usual device control. Dates are worked out in Python and handed to her spelled out, so even a small model says the right day.
+
+| Tool | For |
+|---|---|
+| Set reminder | "Remind me tomorrow at 3 to call the dentist": a to-do with a due time on that person's own list |
+| Set leave time | "I have to leave at 7:45 on Monday": with the time to get up |
+| Add to calendar | "Put the dentist on Tuesday at 14:30", or an all-day event |
+| Upcoming events | "What's on this week?", "How many days until Christmas?" |
+| Note in permanent file | Anything worth keeping about someone; what's in the file goes into her prompt |
 
 ## Services
 

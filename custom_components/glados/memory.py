@@ -17,6 +17,7 @@ from .const import DOMAIN
 
 STORAGE_VERSION = 1
 SAVE_DELAY = 5
+NOTE_PREFIX = "note "
 
 
 class GladosMemory:
@@ -61,6 +62,17 @@ class GladosMemory:
         """Remove a key."""
         if self._data.pop(key, None) is not None:
             self._store.async_delay_save(lambda: self._data, SAVE_DELAY)
+
+    # The permanent file: short facts about people, kept as "note <time>" keys.
+
+    def add_note(self, note: str) -> None:
+        """Write one fact into the permanent file."""
+        self.set(f"{NOTE_PREFIX}{dt_util.now().isoformat()}", note)
+
+    def notes(self) -> list[str]:
+        """Every fact in the permanent file, newest first."""
+        keys = sorted((k for k in self._data if k.startswith(NOTE_PREFIX)), reverse=True)
+        return [self._data[k]["value"] for k in keys]
 
     def as_dict(self) -> dict[str, dict[str, str]]:
         """Everything, for diagnostics."""
