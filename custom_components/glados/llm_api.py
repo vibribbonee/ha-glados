@@ -31,15 +31,24 @@ from homeassistant.util import dt as dt_util
 
 from .audio import audible_player, find_player
 from .announce import blocked_reason
-from .const import CONF_ROUTINE_MINUTES, DOMAIN, LABEL_GLADOS, LABEL_LEFT_ON
+from .const import (
+    CONF_ALARM_BACKUP,
+    CONF_ROUTINE_MINUTES,
+    DOMAIN,
+    LABEL_GLADOS,
+    LABEL_LEFT_ON,
+    MORNING_ENDS_HOUR,
+)
 from .dates import days_away, parse_time, resolve_date, resolve_moment, spoken_date
 from .people import (
     Person,
     all_people,
-    android_phones,
+    android_phone_alarms,
     has_leave_helper,
     leave_helper,
     own_list,
+    people_in_area,
+    person_area,
     resolve_person,
     routine_minutes,
 )
@@ -71,6 +80,35 @@ def _hm(value: datetime) -> str:
 
 def _user_id(llm_context: llm.LLMContext) -> str | None:
     return llm_context.context.user_id if llm_context.context else None
+
+
+def _here(hass: HomeAssistant, llm_context: llm.LLMContext) -> str | None:
+    """The area of the satellite or device the request came from."""
+    if not llm_context.device_id:
+        return None
+    device = dr.async_get(hass).async_get(llm_context.device_id)
+    return device.area_id if device else None
+
+
+def _who(
+    hass: HomeAssistant,
+    llm_context: llm.LLMContext,
+    wanted: str = "",
+    among: list[Person] | None = None,
+) -> Person | None:
+    """Who is meant: a name said, else the one person in the speaker's room.
+
+    Then the HA user who asked, then the only person at home. A name that
+    matches nobody gives None, never a guess.
+    """
+    if wanted:
+        return resolve_person(hass, wanted, None, among)
+    if area := _here(hass, llm_context):
+        here = [x for x in people_in_area(hass, area)
+                if among is None or x.entity_id in {a.entity_id for a in among}]
+        if len(here) == 1:
+            return here[0]
+    return resolve_person(hass, "", _user_id(llm_context), among)
 
 
 def _error(message: str) -> llm.ToolResult:
@@ -131,7 +169,7 @@ class SetReminder(GladosTool):
         else:
             return _error("Ask when: a time or a number of minutes.")
         wanted = args.get("person", "")
-        person = resolve_person(hass, wanted, _user_id(llm_context))
+        person = _who(hass, llm_context, wanted)
         if person is None and wanted:
             return _error(f"No person called {wanted}.")
         todo_list = own_list(hass, person)
@@ -184,9 +222,7 @@ class SetLeaveTime(GladosTool):
             return _error(
                 "Nobody has a leave time helper. Create input_datetime.leave_home_<person>."
             )
-        person: Person | None = resolve_person(
-            hass, args.get("person", ""), _user_id(llm_context), among=candidates
-        )
+        person: Person | None = _who(hass, llm_context, args.get("person", ""), candidates)
         if person is None:
             return _error(
                 "Ask who is leaving. People with a leave time: "
@@ -405,10 +441,7 @@ class SetVolume(GladosTool):
     )
 
     async def run(self, hass, args, llm_context):
-        here = None
-        if llm_context.device_id:
-            device = dr.async_get(hass).async_get(llm_context.device_id)
-            here = device.area_id if device else None
+        here = _here(hass, llm_context)
         wanted = args.get("device", "")
         asked = find_player(hass, wanted, here)
         if asked is None:
@@ -440,17 +473,22 @@ class SetAlarm(GladosTool):
     name = "set_alarm"
     title = "Set alarm"
     description = (
-        "'Wake me at 7:30' or 'set an alarm for tomorrow at 6': sets a real alarm on "
-        "that person's own phone, within the next 24 hours. person: empty for the "
-        "person speaking. For anything later, or not to wake up, use set_reminder. Say "
-        "the time and day as returned."
+        "'Wake me at 7:30', 'set an alarm for 6 tomorrow', 'alarm at 4 for the oven'. "
+        "A morning alarm goes on the person's own phone, with a backup on the room's "
+        "speaker that only rings if the phone alarm fails. Any other alarm rings on the "
+        "room's speaker. ring_on only when they say where. For a countdown (in 10 "
+        "minutes) use the timer tools; for a spoken note, set_reminder. Say the time, "
+        "day and where it rings as returned."
     )
     parameters = p.Schema(
         {
             p.Required("time", description="Alarm time, such as 07:30."): str,
-            p.Optional("day", description="today or tomorrow. Empty: the next time it comes."): str,
+            p.Optional("day", description=f"{_DAY}. Empty: the next time it comes."): str,
             p.Optional("person", description=_PERSON): str,
-            p.Optional("label", description="Short alarm label, such as Dentist."): str,
+            p.Optional("label", description="Short label, such as Dentist."): str,
+            p.Optional("ring_on", description="phone, room or both, only when they say."): p.In(
+                ["phone", "room", "both"]
+            ),
         }
     )
 
@@ -460,35 +498,81 @@ class SetAlarm(GladosTool):
             return _error("Ask for the time, such as seven thirty.")
         now = dt_util.now()
         at = resolve_moment(args.get("day"), t, now)
-        if at - now > timedelta(hours=24):
-            return _error("A phone alarm can only be set for the next 24 hours. Use set_reminder.")
         wanted = args.get("person", "")
-        person = resolve_person(hass, wanted, _user_id(llm_context))
-        if person is None:
-            return _error(f"No person called {wanted}." if wanted else "Ask whose alarm it is.")
-        services = android_phones(hass, person)
-        if not services:
-            return _error(f"{person.name} has no Android phone with the Home Assistant app.")
-        extras = (
-            f"android.intent.extra.alarm.HOUR:{at.hour},"
-            f"android.intent.extra.alarm.MINUTES:{at.minute},"
-            "android.intent.extra.alarm.SKIP_UI:true,"
-            f"android.intent.extra.alarm.MESSAGE:{re.sub(r'[,:]', ' ', args.get('label') or 'GLaDOS')}"
-        )
-        await hass.services.async_call(
-            "notify",
-            services[0],
-            {
-                "message": "command_activity",
-                "data": {"intent_action": "android.intent.action.SET_ALARM", "intent_extras": extras},
-            },
-            blocking=True,
-            context=llm_context.context,
-        )
-        return llm.ToolResult(
-            data={"alarm": _hm(at), "day": days_away(at, now), "date": spoken_date(at),
-                  "person": person.name, "phone": services[0].removeprefix("mobile_app_")}
-        )
+        person = _who(hass, llm_context, wanted)
+        if person is None and wanted:
+            return _error(f"No person called {wanted}.")
+        morning = 3 <= at.hour < MORNING_ENDS_HOUR
+        ring_on = args.get("ring_on") or ("both" if morning else "room")
+        phones = android_phone_alarms(hass, person) if person else []
+        notes: list[str] = []
+        if ring_on in ("phone", "both") and not phones:
+            notes.append("No phone with the Home Assistant app, so it rings on the room's speaker.")
+            ring_on = "room"
+        if ring_on in ("phone", "both") and at - now > timedelta(hours=24):
+            notes.append("A phone alarm can only be set for the next 24 hours.")
+            ring_on = "room"
+        area = _here(hass, llm_context) or (person_area(hass, person) if person else None)
+        if ring_on in ("room", "both") and not area:
+            if ring_on == "room":
+                return _error("Ask which room the alarm should ring in.")
+            notes.append("No room is known, so there is no backup.")
+            ring_on = "phone"
+        label = (args.get("label") or "").strip()
+        if ring_on in ("phone", "both"):
+            service, sensor = phones[0]
+            extras = (
+                f"android.intent.extra.alarm.HOUR:{at.hour},"
+                f"android.intent.extra.alarm.MINUTES:{at.minute},"
+                "android.intent.extra.alarm.SKIP_UI:true,"
+                f"android.intent.extra.alarm.MESSAGE:{re.sub(r'[,:]', ' ', label or 'GLaDOS')}"
+            )
+            await hass.services.async_call(
+                "notify",
+                service,
+                {"message": "command_activity",
+                 "data": {"intent_action": "android.intent.action.SET_ALARM",
+                          "intent_extras": extras}},
+                blocking=True,
+                context=llm_context.context,
+            )
+        if ring_on in ("room", "both"):
+            backup = int(self.data.options.get(CONF_ALARM_BACKUP, 10))
+            self.data.alarms.add(
+                at, area, person.name if person else "", label, wake=morning or not label,
+                backup_after=timedelta(minutes=backup) if ring_on == "both" else None,
+                phone_sensor=phones[0][1] if ring_on == "both" else "",
+            )
+        where = {
+            "phone": "on the phone",
+            "room": f"on the speaker in the {area_name(hass, area)}" if area else "",
+            "both": f"on the phone, with a backup in the {area_name(hass, area)} if the phone fails",
+        }[ring_on]
+        data = {"alarm": _hm(at), "day": days_away(at, now), "date": spoken_date(at),
+                "rings": where}
+        if person:
+            data["person"] = person.name
+        if notes:
+            data["note"] = " ".join(notes)
+        return llm.ToolResult(data=data)
+
+
+class StopAlarm(GladosTool):
+    name = "stop_alarm"
+    title = "Stop or snooze alarm"
+    description = (
+        "'Stop', 'I'm up', 'snooze' while an alarm rings on a speaker: stops it, or "
+        "snoozes it for nine minutes. Not for timers."
+    )
+    parameters = p.Schema(
+        {p.Optional("snooze", description="true to snooze instead of stop.", default=False): p.Boolean()}
+    )
+
+    async def run(self, hass, args, llm_context):
+        hit = self.data.alarms.stop(_here(hass, llm_context), snooze=args["snooze"])
+        if not hit:
+            return _error("No alarm is ringing here.")
+        return llm.ToolResult(data={"snoozed" if args["snooze"] else "stopped": len(hit)})
 
 
 class Broadcast(GladosTool):
@@ -506,10 +590,7 @@ class Broadcast(GladosTool):
 
     async def run(self, hass, args, llm_context):
         message = clean_for_speech(args["message"])
-        here = None
-        if llm_context.device_id:
-            device = dr.async_get(hass).async_get(llm_context.device_id)
-            here = device.area_id if device else None
+        here = _here(hass, llm_context)
         sent: list[str] = []
         skipped: dict[str, str] = {}
         seen: set[str] = set()
@@ -576,7 +657,7 @@ class LeavingCheck(GladosTool):
 
 
 TOOLS = (SetReminder, SetLeaveTime, AddToCalendar, UpcomingEvents, NoteInFile, SetVolume,
-         SetAlarm, Broadcast, LeavingCheck)
+         SetAlarm, StopAlarm, Broadcast, LeavingCheck)
 
 
 class GladosAPI(llm.API):

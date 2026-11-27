@@ -16,6 +16,7 @@ from homeassistant.core import callback
 from homeassistant.helpers import selector
 
 from .const import (
+    CONF_ALARM_BACKUP,
     CONF_ANNOUNCER_VOICE,
     CONF_BEEP_IN,
     CONF_BEEP_OUT,
@@ -90,6 +91,14 @@ def _options_schema(current: dict[str, Any]) -> vol.Schema:
                     )
                 )
             ),
+            vol.Required(CONF_ALARM_BACKUP, default=int(current[CONF_ALARM_BACKUP])): (
+                selector.NumberSelector(
+                    selector.NumberSelectorConfig(
+                        min=1, max=60, step=1, unit_of_measurement="min",
+                        mode=selector.NumberSelectorMode.BOX,
+                    )
+                )
+            ),
             vol.Required(CONF_ROUTINE_MINUTES, default=int(current[CONF_ROUTINE_MINUTES])): (
                 selector.NumberSelector(
                     selector.NumberSelectorConfig(
@@ -108,6 +117,7 @@ def clean_options(user_input: dict[str, Any]) -> dict[str, Any]:
     data.update(user_input)
     data[CONF_ROUTINE_MINUTES] = int(data[CONF_ROUTINE_MINUTES])
     data[CONF_CO2_REMINDER] = int(data[CONF_CO2_REMINDER])
+    data[CONF_ALARM_BACKUP] = int(data[CONF_ALARM_BACKUP])
     return data
 
 

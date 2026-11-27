@@ -49,6 +49,7 @@ class AnnounceRequest:
     glados_after: str = ""
     satellite: str | None = None  # speak on this one, whatever room it is in
     glados_line: str = ""  # a fixed GLaDOS line: after the Announcer, or on her own
+    wake: bool = False  # an alarm: rings past the sleep and quiet rules
 
 
 def blocked_reason(ctx: RoomContext, ignore_schedule: bool, anywhere: bool) -> str:
@@ -103,7 +104,10 @@ class Announcer:
         """Announce, or explain why not."""
         area = req.area or (area_of(self.hass, req.satellite) if req.satellite else None)
         ctx = describe(self.hass, area, str(self.options[CONF_SCHEDULE] or "") or None)
-        reason = blocked_reason(ctx, req.ignore_schedule, req.anywhere or bool(req.satellite))
+        if req.wake:
+            reason = "" if (req.satellite or ctx.satellite or ctx.any_satellite) else "no voice satellite"
+        else:
+            reason = blocked_reason(ctx, req.ignore_schedule, req.anywhere or bool(req.satellite))
         if reason:
             return {"spoken": False, "reason": reason, "speech": "", "after": "", "area": ctx.area}
 

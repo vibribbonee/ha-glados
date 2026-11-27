@@ -130,8 +130,13 @@ def android_phones(hass: HomeAssistant, person: Person) -> list[str]:
 
     These take companion-app commands, such as opening the alarm clock app.
     """
+    return [service for service, _ in android_phone_alarms(hass, person)]
+
+
+def android_phone_alarms(hass: HomeAssistant, person: Person) -> list[tuple[str, str]]:
+    """(notify action, next-alarm sensor or "") for a person's Android phones."""
     reg = dr.async_get(hass)
-    found: list[str] = []
+    found: list[tuple[str, str]] = []
     for device_id in tracker_devices(hass, person):
         device = reg.async_get(device_id)
         if device is None or not any(d == "mobile_app" for d, _ in device.identifiers):
@@ -139,8 +144,9 @@ def android_phones(hass: HomeAssistant, person: Person) -> list[str]:
         if (device.manufacturer or "").lower() == "apple" or _NOT_A_PHONE.search(device.name or ""):
             continue
         service = f"mobile_app_{slugify(device.name or '')}"
-        if hass.services.has_service("notify", service) and service not in found:
-            found.append(service)
+        if hass.services.has_service("notify", service) and service not in [f for f, _ in found]:
+            sensor = next((e for e in device_entities(hass, device_id) if _NEXT_ALARM.match(e)), "")
+            found.append((service, sensor))
     return found
 
 

@@ -47,6 +47,7 @@ CONF_SCHEDULE = "speaking_schedule"  # a schedule entity; empty: any time
 CONF_ROUTINE_MINUTES = "routine_minutes"
 CONF_CO2_ALERTS = "co2_alerts"  # announcer, glados or off
 CONF_CO2_REMINDER = "co2_reminder_minutes"  # 0: no reminder
+CONF_ALARM_BACKUP = "alarm_backup_minutes"  # a phone alarm not dismissed by then rings the room
 CONF_COLD_OUTSIDE = "cold_outside_below"  # degrees: an open window counts as wasteful
 
 DEFAULTS: dict[str, str | int | bool] = {
@@ -62,6 +63,7 @@ DEFAULTS: dict[str, str | int | bool] = {
     CONF_CO2_ALERTS: "off",
     CONF_CO2_REMINDER: 30,
     CONF_COLD_OUTSIDE: 8,
+    CONF_ALARM_BACKUP: 10,
 }
 
 # Labels people put on their own devices

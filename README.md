@@ -63,6 +63,18 @@ A window open for 20 minutes in the cold gets one reminder per opening: in the r
 
 With **Announcer, then GLaDOS**, the facility Announcer reads the warning and GLaDOS remarks on it. With **GLaDOS alone**, she gives the warning herself. The lines are written out rather than improvised, so a real warning is never softened. Try them with the **Test announcement** button, or with `glados.test_announcement` and a pretend `co2` reading.
 
+## Alarms, timers and reminders
+
+| | Means | Rings on |
+|---|---|---|
+| Timer | "In 10 minutes": a countdown | The speaker you asked, through Home Assistant's own timers |
+| Reminder | "At 3, remind me to call the dentist" | The room you are in at that time, else your phone |
+| Alarm | "Wake me at 7:30", "alarm at 4 for the oven" | Morning: your phone, with a backup on the speaker. Otherwise the speaker |
+
+The backup rings only when the phone alarm failed: it never showed up as the phone's next alarm, the phone is off or flat, or it was not dismissed within **Alarm backup after** (10 minutes). A speaker alarm repeats three times, three minutes apart, and stops as soon as the room looks awake (out of bed with the light on), or when you say stop. Alarms are the one thing allowed past the sleep rules.
+
+For the phone part, the Home Assistant app needs **Display over other apps**: on the phone, **Settings → Apps → Home Assistant → Display over other apps → Allow**. Who the alarm is for comes from the room: the person in the speaker's room, as Bermuda sees it.
+
 ## How she finds things
 
 Nothing is hard-coded. She works it out from your areas, labels and names:
@@ -98,7 +110,8 @@ With **GLaDOS** ticked under the chat agent's **Control Home Assistant**, she ge
 | Upcoming events | "What's on this week?", "How many days until Christmas?" |
 | Note in permanent file | Anything worth keeping about someone; what's in the file goes into her prompt |
 | Set volume | "Turn the TV up a little": a TV that plays through a soundbar changes the soundbar |
-| Set alarm | "Wake me at 7:30": a real alarm on that person's own Android phone, through the Home Assistant app. The first time, the phone asks you to allow **Display over other apps** for the app |
+| Set alarm | "Wake me at 7:30": a morning alarm goes on that person's own Android phone, with a backup on the room's speaker; any other alarm rings on the speaker. Say "on my phone" or "in the bedroom" to choose |
+| Stop alarm | "Stop", "I'm up", "snooze" while a speaker alarm rings |
 | Broadcast | "Tell everyone dinner is ready": every other room with a speaker, except where someone sleeps or watches a video |
 | Leaving check | "I'm heading out" or "is everything off?": what's still on among devices labelled `glados_left_on`, and which windows and doors are open |
 

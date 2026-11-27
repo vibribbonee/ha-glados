@@ -34,6 +34,7 @@ import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers import llm
 
 from .air import AirWatch
+from .alarms import AlarmClock
 from .announce import AnnounceRequest, Announcer
 from .const import (
     ATTR_ANYWHERE,
@@ -142,6 +143,7 @@ class GladosData:
     memory: GladosMemory
     announcer: Announcer
     options: dict[str, Any]
+    alarms: AlarmClock | None = None
 
 
 type GladosConfigEntry = ConfigEntry[GladosData]
@@ -160,6 +162,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: GladosConfigEntry) -> bo
     entry.async_on_unload(entry.add_update_listener(_async_reload))
     entry.async_on_unload(llm.async_register_api(hass, GladosAPI(hass, entry.runtime_data)))
     entry.async_on_unload(AirWatch(hass, entry.runtime_data).start())
+    entry.runtime_data.alarms = AlarmClock(hass, entry.runtime_data)
+    entry.async_on_unload(entry.runtime_data.alarms.start())
 
     def data() -> GladosData:
         return entry.runtime_data

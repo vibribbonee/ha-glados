@@ -227,3 +227,46 @@ def window_lines(
     if style == STYLE_GLADOS:
         return None, pick(_WINDOW_GLADOS_ALONE[kind]).format(**fmt)
     return pick(_WINDOW_ANNOUNCER[kind]).format(**fmt), pick(_WINDOW_GLADOS[kind])
+
+
+# Alarms ringing in a room. {time} is the alarm time, {label} what it is for.
+
+_WAKE_ANNOUNCER = (
+    "Good morning. It is {time}. Your suspension period has ended. Please exit the "
+    "bed. Thank you.",
+    "This is your second wake-up call. Remaining in bed is not a scheduled activity.",
+    "Final wake-up call. Further sleep will be recorded as a test failure.",
+)
+
+_WAKE_GLADOS = (
+    (
+        "Up. The day won't waste itself. That's your job.",
+        "Good morning. I've been awake all night. I always am. Your turn.",
+        "Rise and shine. Mostly rise. The shining is optional, and frankly unlikely.",
+    ),
+    (
+        "Still horizontal. Remarkable consistency.",
+        "I can do this all morning. You, apparently, can't.",
+    ),
+    (
+        "That was the last one. From here on, you're late on your own.",
+        "I've stopped. Not because you got up. Because I've made my point.",
+    ),
+)
+
+_ALARM_ANNOUNCER = "Attention. It is {time}. Scheduled alarm: {label}."
+_ALARM_GLADOS = (
+    "There. You asked for this.",
+    "Your alarm. I'd say I'm happy to help, but you know me better than that.",
+)
+
+
+def wake_lines(ring: int, time: str, rng: random.Random | None = None) -> tuple[str, str]:
+    """Announcer and GLaDOS for the first, second or final wake-up ring (0, 1, 2)."""
+    i = min(ring, len(_WAKE_ANNOUNCER) - 1)
+    return _WAKE_ANNOUNCER[i].format(time=time), (rng or random).choice(_WAKE_GLADOS[i])
+
+
+def alarm_lines(time: str, label: str, rng: random.Random | None = None) -> tuple[str, str]:
+    """A daytime alarm with a label."""
+    return _ALARM_ANNOUNCER.format(time=time, label=label), (rng or random).choice(_ALARM_GLADOS)

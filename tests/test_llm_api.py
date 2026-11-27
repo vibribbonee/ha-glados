@@ -145,7 +145,7 @@ async def test_volume_follows_the_sound(home: Home) -> None:
     assert (await _call(api, "set_volume", device="radio")).error
 
 
-async def test_set_alarm_on_their_phone(home: Home) -> None:
+async def test_set_alarm(home: Home) -> None:
     from homeassistant.helpers import device_registry as dr, entity_registry as er
     phone = er.async_get(home.hass).async_get("device_tracker.pixel_9a").device_id
     devices = dr.async_get(home.hass)
@@ -154,17 +154,25 @@ async def test_set_alarm_on_their_phone(home: Home) -> None:
         name="Pixel 9a",
     )
     api = await _api(home.hass)
+    clock = home.hass.config_entries.async_entries(DOMAIN)[0].runtime_data.alarms
     calls = async_mock_service(home.hass, "notify", "mobile_app_pixel_9a")
+
+    # Morning: the phone, with a backup in the room Nico is in.
     result = await _call(api, "set_alarm", time="7:30", label="Dentist")
-    assert result.data == {"alarm": "07:30", "day": "tomorrow", "date": "Saturday 28 November",
-                           "person": "nico", "phone": "pixel_9a"}
-    sent = calls[0].data
-    assert sent["message"] == "command_activity"
-    assert sent["data"]["intent_action"] == "android.intent.action.SET_ALARM"
-    assert "HOUR:7," in sent["data"]["intent_extras"] and "MINUTES:30" in sent["data"]["intent_extras"]
-    assert "MESSAGE:Dentist" in sent["data"]["intent_extras"]
-    # Not more than a day ahead.
-    assert (await _call(api, "set_alarm", time="7:30", day="monday")).error
+    assert result.data["alarm"] == "07:30" and result.data["day"] == "tomorrow"
+    assert "backup in the Bedroom" in result.data["rings"]
+    extras = calls[0].data["data"]["intent_extras"]
+    assert "HOUR:7," in extras and "MINUTES:30" in extras and "MESSAGE:Dentist" in extras
+    [backup] = clock.alarms()
+    assert backup.backup and backup.phone_sensor == "sensor.pixel_9a_next_alarm"
+
+    # Afternoon: the room's speaker only.
+    result = await _call(api, "set_alarm", time="16:00", label="oven")
+    assert result.data["rings"] == "on the speaker in the Bedroom" and len(calls) == 1
+
+    # Asked for the phone on Monday: too far ahead, so the room, with a note.
+    result = await _call(api, "set_alarm", time="7:30", day="monday", ring_on="phone")
+    assert "next 24 hours" in result.data["note"] and "speaker" in result.data["rings"]
 
 
 async def test_broadcast_skips_rooms_that_must_stay_quiet(home: Home) -> None:
