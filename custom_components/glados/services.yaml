@@ -122,3 +122,16 @@ briefing:
       default: false
       selector:
         boolean:
+greet:
+  fields:
+    person:
+      example: nico
+      selector:
+        text:
+    area:
+      selector:
+        area:
+    pretend_birthday:
+      default: false
+      selector:
+        boolean:

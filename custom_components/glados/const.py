@@ -14,6 +14,7 @@ SERVICE_RECALL = "recall"
 SERVICE_WHO = "who"
 SERVICE_TEST_ANNOUNCEMENT = "test_announcement"
 SERVICE_BRIEFING = "briefing"
+SERVICE_GREET = "greet"
 
 # Service fields
 ATTR_TEXT = "text"
@@ -34,6 +35,7 @@ ATTR_STYLE = "style"
 ATTR_REMINDER = "reminder"
 ATTR_MORNING = "morning"
 ATTR_PLAIN = "plain"
+ATTR_PRETEND_BIRTHDAY = "pretend_birthday"
 
 VOICE_GLADOS = "glados"
 VOICE_ANNOUNCER = "announcer"
@@ -51,6 +53,9 @@ CONF_ROUTINE_MINUTES = "routine_minutes"
 CONF_CO2_ALERTS = "co2_alerts"  # announcer, glados or off
 CONF_CO2_REMINDER = "co2_reminder_minutes"  # 0: no reminder
 CONF_BEDTIME_SENSOR = "bedtime_sensor"  # optional timestamp sensor: when to be asleep
+CONF_MORNING = "morning_greeting"  # wake-up greeting, birthday, "in suspension for"
+CONF_BIRTHDAY_SONG = "birthday_song"  # media id, played before the birthday line
+CONF_BIRTHDAY_NAMES = "birthday_names"  # "nico: Sjors, Nico; byte: Bee"
 CONF_LEAVE_HEADS_UP = "leave_heads_up_minutes"  # 0: only "leave now"
 CONF_REMINDERS = "reminders"  # say due reminders (and keep the night's)
 CONF_ALARM_BACKUP = "alarm_backup_minutes"  # a phone alarm not dismissed by then rings the room
@@ -73,6 +78,9 @@ DEFAULTS: dict[str, str | int | bool] = {
     CONF_REMINDERS: True,
     CONF_BEDTIME_SENSOR: "",
     CONF_LEAVE_HEADS_UP: 15,
+    CONF_MORNING: True,
+    CONF_BIRTHDAY_SONG: "",
+    CONF_BIRTHDAY_NAMES: "",
 }
 
 # Labels people put on their own devices

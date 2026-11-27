@@ -37,6 +37,7 @@ from .addon import async_start_addons
 from .air import AirWatch
 from .alarms import AlarmClock
 from .departures import Departures
+from .morning import Mornings
 from .reminders import Reminders
 from .announce import AnnounceRequest, Announcer
 from .briefing import async_briefing, async_facts
@@ -46,6 +47,7 @@ from .const import (
     ATTR_CO2,
     ATTR_MORNING,
     ATTR_PLAIN,
+    ATTR_PRETEND_BIRTHDAY,
     ATTR_REMINDER,
     ATTR_STYLE,
     ATTR_FACTS,
@@ -65,6 +67,7 @@ from .const import (
     DOMAIN,
     SERVICE_ANNOUNCE,
     SERVICE_BRIEFING,
+    SERVICE_GREET,
     SERVICE_CLEAN_TEXT,
     SERVICE_RECALL,
     SERVICE_REMEMBER,
@@ -104,6 +107,7 @@ SERVICES = (
     SERVICE_RECALL,
     SERVICE_TEST_ANNOUNCEMENT,
     SERVICE_BRIEFING,
+    SERVICE_GREET,
 )
 
 CLEAN_TEXT_SCHEMA = vol.Schema({vol.Required(ATTR_TEXT): cv.string})
@@ -136,6 +140,13 @@ BRIEFING_SCHEMA = vol.Schema(
         vol.Optional(ATTR_PLAIN, default=False): cv.boolean,
     }
 )
+GREET_SCHEMA = vol.Schema(
+    {
+        vol.Optional(ATTR_PERSON, default=""): cv.string,
+        vol.Optional(ATTR_AREA, default=""): cv.string,
+        vol.Optional(ATTR_PRETEND_BIRTHDAY, default=False): cv.boolean,
+    }
+)
 TEST_SCHEMA = vol.Schema(
     {
         vol.Optional(ATTR_SATELLITE): cv.entity_id,
@@ -159,6 +170,7 @@ class GladosData:
     announcer: Announcer
     options: dict[str, Any]
     alarms: AlarmClock | None = None
+    mornings: Mornings | None = None
 
 
 type GladosConfigEntry = ConfigEntry[GladosData]
@@ -181,6 +193,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: GladosConfigEntry) -> bo
     entry.async_on_unload(entry.runtime_data.alarms.start())
     entry.async_on_unload(Reminders(hass, entry.runtime_data).start())
     entry.async_on_unload(Departures(hass, entry.runtime_data).start())
+    entry.runtime_data.mornings = Mornings(hass, entry.runtime_data)
+    entry.async_on_unload(entry.runtime_data.mornings.start())
     entry.async_on_unload(async_start_addons(hass, entry.runtime_data))
 
     def data() -> GladosData:
@@ -224,6 +238,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: GladosConfigEntry) -> bo
         return await async_briefing(
             hass, data().options, call.data[ATTR_MORNING], area, call.context
         )
+
+    async def _greet(call: ServiceCall) -> ServiceResponse:
+        person = resolve_person(hass, call.data[ATTR_PERSON], call.context.user_id)
+        if person is None:
+            return {"spoken": False, "reason": "no such person"}
+        mornings = data().mornings
+        memory = data().memory
+        memory.forget(f"greeted {person.entity_id}")  # a test greets again
+        result = await mornings.async_greet(
+            person, call.data[ATTR_AREA] or None, call.context, call.data[ATTR_PRETEND_BIRTHDAY]
+        )
+        return result or {"spoken": False, "reason": "quiet: in bed in the dark, Do Not Disturb, a video, or no speaker"}
 
     async def _test(call: ServiceCall) -> ServiceResponse:
         return await data().announcer.async_test(
@@ -272,6 +298,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: GladosConfigEntry) -> bo
     register(DOMAIN, SERVICE_SAY, _say, SAY_SCHEMA, SupportsResponse.ONLY)
     register(DOMAIN, SERVICE_ROOM_CONTEXT, _room_context, ROOM_SCHEMA, SupportsResponse.ONLY)
     register(DOMAIN, SERVICE_ANNOUNCE, _announce, ANNOUNCE_SCHEMA, SupportsResponse.OPTIONAL)
+    register(DOMAIN, SERVICE_GREET, _greet, GREET_SCHEMA, SupportsResponse.OPTIONAL)
     register(DOMAIN, SERVICE_BRIEFING, _briefing, BRIEFING_SCHEMA, SupportsResponse.ONLY)
     register(DOMAIN, SERVICE_TEST_ANNOUNCEMENT, _test, TEST_SCHEMA, SupportsResponse.OPTIONAL)
     register(DOMAIN, SERVICE_WHO, _who, WHO_SCHEMA, SupportsResponse.ONLY)

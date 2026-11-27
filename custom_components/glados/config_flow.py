@@ -20,6 +20,8 @@ from .const import (
     CONF_ANNOUNCER_VOICE,
     CONF_BEEP_IN,
     CONF_BEDTIME_SENSOR,
+    CONF_BIRTHDAY_NAMES,
+    CONF_BIRTHDAY_SONG,
     CONF_BEEP_OUT,
     CONF_CO2_ALERTS,
     CONF_CO2_REMINDER,
@@ -27,6 +29,7 @@ from .const import (
     CONF_CHAT_AGENT,
     CONF_HOME_TOWN,
     CONF_LEAVE_HEADS_UP,
+    CONF_MORNING,
     CONF_PERSONALITY,
     CONF_REMINDERS,
     CONF_ROUTINE_MINUTES,
@@ -76,6 +79,11 @@ def _options_schema(current: dict[str, Any]) -> vol.Schema:
             vol.Required(CONF_REMINDERS, default=bool(current[CONF_REMINDERS])): (
                 selector.BooleanSelector()
             ),
+            vol.Required(CONF_MORNING, default=bool(current[CONF_MORNING])): (
+                selector.BooleanSelector()
+            ),
+            opt(CONF_BIRTHDAY_SONG): TEXT,
+            opt(CONF_BIRTHDAY_NAMES): TEXT,
             vol.Required(CONF_CO2_ALERTS, default=str(current[CONF_CO2_ALERTS])): (
                 selector.SelectSelector(
                     selector.SelectSelectorConfig(

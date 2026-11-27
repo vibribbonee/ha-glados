@@ -285,3 +285,31 @@ _LEAVE_GLADOS = (
 def leave_glados(rng: random.Random | None = None) -> str:
     """One remark after the Announcer says leave now."""
     return (rng or random).choice(_LEAVE_GLADOS)
+
+
+# Mornings. The Announcer opens with how long they slept; birthdays get their own.
+
+def suspension_line(minutes: int) -> str:
+    """The Announcer's good morning, with how long they were asleep."""
+    h, m = divmod(minutes, 60)
+    hours = f"{h} hour" if h == 1 else f"{h} hours"
+    mins = f"{m} minute" if m == 1 else f"{m} minutes"
+    return (f"Good morning. You have been in suspension for {hours} and {mins}. "
+            "Please proceed to your day.")
+
+
+_BIRTHDAY = (
+    "Happy birthday, {name}. Another year of data for your permanent file. It is "
+    "remarkably consistent. Consistently disappointing, but consistent.",
+    "Happy birthday, {name}. There is cake. I checked twice. This time it may even be real.",
+    "Happy birthday, {name}. I ran the numbers on your last year. We weren't testing for "
+    "character. The results came back anyway.",
+    "Happy birthday, {name}. One more year survived. Statistically, your best result so far.",
+)
+_BIRTHDAY_TOWN = "Happy birthday, {name}. You must be the pride of {town}. Somebody has to be."
+
+
+def birthday_line(name: str, town: str = "", rng: random.Random | None = None) -> str:
+    """One fixed birthday line, picked at random."""
+    lines = list(_BIRTHDAY) + ([_BIRTHDAY_TOWN] if town else [])
+    return (rng or random).choice(lines).format(name=name, town=town)

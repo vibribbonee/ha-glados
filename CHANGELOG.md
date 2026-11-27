@@ -6,10 +6,12 @@
 - **Add-ons.** GLaDOS works on her own; anything that needs another integration becomes an add-on: its own integration and repository, with `glados` as a dependency. Add-ons register tools, lines for her instructions and background jobs through `custom_components.glados.addon`, and speak through her announcer, quiet rules and voices. See [docs/ADDONS.md](docs/ADDONS.md).
 - **Leave-time reminders in the integration.** For each person with a `leave_home_<person>` helper, while they are home: a heads-up before (**Leave heads-up**, 15 minutes, with the outside temperature), then "leave now" at the time, by the Announcer in their room, with one GLaDOS remark. New: "leave now" also says what is still on (`glados_left_on`) and which windows and doors are open. Asleep or on Do Not Disturb: their phone. A minute missed during a restart is caught up, up to five minutes late.
 
+- **Mornings in the integration.** Between 20:00 and 05:00, a phone going on a wireless charger notes when someone fell asleep. A morning alarm (a phone's next alarm, or an alarm clock's alarm-ringing sensor) fades on the lights labelled `glados_wakeup` while it's dark, sets a leave time (alarm plus their morning routine) if none is set for today, and once they're out of bed she greets them: the Announcer's "you have been in suspension for 7 hours and 33 minutes", then GLaDOS with the morning briefing. No alarm: the first time a light labelled `glados` goes on in their room. On their birthday: the **Birthday song**, then a fixed birthday line with their first commitment. Once per person per day. Settings: **Morning greeting**, **Birthday song**, **Birthday names** (such as `nico: Sjors`). `glados.greet` tests it, `pretend_birthday` too.
 - **The first add-on: [GLaDOS trains](https://github.com/vibribbonee/ha-glados-trains).** Its own repository and HACS install.
 
 ### To do when installing
 - Turn off `automation.glados_time_to_leave`, or it is said twice.
+- Turn off `automation.glados_good_morning` and `automation.glados_notes_when_you_go_to_sleep`; set **Birthday song** to your song and **Birthday names** from `input_text.glados_birthday_names`.
 - After installing GLaDOS trains: turn off `automation.glados_train_reminders` and hide `script.set_train_reminder` from her.
 
 ## 0.7.0
