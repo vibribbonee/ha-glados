@@ -45,6 +45,7 @@ from .bedtime import Bedtimes
 from .character import Character
 from .morning import Mornings
 from .reminders import Reminders
+from .welcome import Welcome
 from .announce import AnnounceRequest, Announcer
 from .briefing import async_briefing, async_facts
 from .const import (
@@ -213,6 +214,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: GladosConfigEntry) -> bo
     air = AirWatch(hass, run)
     heart.add("air and windows", air.async_tick)
     heart.add("her own initiative", Character(hass, run).async_tick)
+    heart.add("welcome home", Welcome(hass, run).async_tick)
     entry.async_on_unload(heart.start())
 
     @callback

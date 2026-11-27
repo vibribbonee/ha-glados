@@ -44,6 +44,8 @@ VOICE_ANNOUNCER = "announcer"
 CONF_CHAT_AGENT = "chat_agent"  # answers when you talk to her
 CONF_PERSONALITY = "personality"  # send her persona as an extra system prompt
 CONF_HOME_TOWN = "home_town"
+CONF_HOUSE_NOTES = "house_notes"  # what only this house knows: pets, nicknames, habits
+CONF_LIVE_HOUSE = "live_house"  # the live house summary in her tool instructions
 CONF_VOICE_AGENT = "voice_agent"  # rewrites announcements; empty: the chat agent
 CONF_ANNOUNCER_VOICE = "announcer_voice"  # "tts.engine:voice"; empty: her own voice
 CONF_BEEP_IN = "beep_in"
@@ -63,6 +65,7 @@ CONF_WARM_ABOVE = "warm_above"
 CONF_SETTLED = "settled_minutes"  # in the room this long: not just passing through
 CONF_NOTICES = "facility_notices"
 CONF_IDLE = "idle_remarks"
+CONF_WELCOME = "welcome_home"  # coming home: what you missed
 CONF_MORNING = "morning_greeting"  # wake-up greeting, birthday, "in suspension for"
 CONF_BIRTHDAY_SONG = "birthday_song"  # media id, played before the birthday line
 CONF_BIRTHDAY_NAMES = "birthday_names"  # "nico: Sjors, Nico; byte: Bee"
@@ -76,6 +79,8 @@ DEFAULTS: dict[str, str | int | bool] = {
     CONF_PERSONALITY: True,
     CONF_HOME_TOWN: "",
     CONF_VOICE_AGENT: "",
+    CONF_HOUSE_NOTES: "",
+    CONF_LIVE_HOUSE: True,
     CONF_ANNOUNCER_VOICE: "",
     CONF_BEEP_IN: "",
     CONF_BEEP_OUT: "",
@@ -89,6 +94,7 @@ DEFAULTS: dict[str, str | int | bool] = {
     CONF_BEDTIME_SENSOR: "",
     CONF_LEAVE_HEADS_UP: 15,
     CONF_MORNING: True,
+    CONF_WELCOME: True,
     CONF_COMFORT: True,
     CONF_COLD_BELOW: 16,
     CONF_WARM_ABOVE: 25,

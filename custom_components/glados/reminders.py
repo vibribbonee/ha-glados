@@ -122,6 +122,8 @@ class Reminders:
             )
         if not result.get("spoken"):
             await self._to_phone(person, what)
+            if person and not home:
+                self._missed(person, what, at)
             if home and any(r in result.get("reason", "") for r in _ASLEEP):
                 self._hold(what, person, area, at)
         if str(item.get("description") or "") == REMINDER_NOTE:
@@ -141,6 +143,12 @@ class Reminders:
                 {"entity_id": targets, "title": "Reminder", "message": what},
                 blocking=True,
             )
+
+    def _missed(self, person: Person, what: str, at: datetime) -> None:
+        """Kept for the welcome home: what came due while they were out."""
+        key = f"missed {person.entity_id}"
+        missed = json.loads(self.data.memory.get(key) or "[]")
+        self.data.memory.set(key, json.dumps([*missed, {"what": what, "at": at.isoformat()}]))
 
     # Kept from the night ----------------------------------------------------
 

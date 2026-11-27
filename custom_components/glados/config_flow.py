@@ -44,8 +44,10 @@ from .const import (
     CONF_CO2_REMINDER,
     CONF_COLD_OUTSIDE,
     CONF_HOME_TOWN,
+    CONF_HOUSE_NOTES,
     CONF_IDLE,
     CONF_LEAVE_HEADS_UP,
+    CONF_LIVE_HOUSE,
     CONF_MIN_SLEEP,
     CONF_MORNING,
     CONF_NOTICES,
@@ -57,6 +59,7 @@ from .const import (
     CONF_SLEEP_GOAL,
     CONF_USUAL_BEDTIME,
     CONF_VOICE_AGENT,
+    CONF_WELCOME,
     CONF_WARM_ABOVE,
     DEFAULTS,
     DOMAIN,
@@ -82,6 +85,9 @@ SECTIONS: dict[str, list[Field]] = {
         (CONF_PERSONALITY, True, SWITCH, bool),
         (CONF_HOME_TOWN, False, TEXT, str),
         (CONF_VOICE_AGENT, False, AGENT, str),
+        (CONF_HOUSE_NOTES, False, selector.TextSelector(
+            selector.TextSelectorConfig(multiline=True)), str),
+        (CONF_LIVE_HOUSE, True, SWITCH, bool),
     ],
     "voices": [
         (CONF_ANNOUNCER_VOICE, False, TEXT, str),
@@ -106,6 +112,7 @@ SECTIONS: dict[str, list[Field]] = {
     ],
     "days": [
         (CONF_REMINDERS, True, SWITCH, bool),
+        (CONF_WELCOME, True, SWITCH, bool),
         (CONF_LEAVE_HEADS_UP, True, _number(0, 120, 5, "min"), int),
         (CONF_ROUTINE_MINUTES, True, _number(5, 180, 5, "min"), int),
         (CONF_ALARM_BACKUP, True, _number(1, 60, 1, "min"), int),

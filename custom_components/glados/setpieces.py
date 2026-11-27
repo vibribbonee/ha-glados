@@ -406,3 +406,17 @@ def notice_lines(room: str, hours: int, outside: float | None) -> list[str]:
 
 LATE_NOTICE = ("Attention. Testing hours have ended. All test subjects. Please proceed. "
                "To your suspension chambers. Lights out is mandatory.")
+
+
+# Coming home.
+
+_WELCOME_GLADOS = (
+    "Oh. It's you.",
+    "You're back. The house was so peaceful.",
+    "Welcome home. Nothing caught fire. I was almost disappointed.",
+    "There you are. I'd started reassigning your room.",
+)
+
+
+def welcome_glados(rng: random.Random | None = None) -> str:
+    return (rng or random).choice(_WELCOME_GLADOS)

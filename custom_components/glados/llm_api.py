@@ -34,8 +34,11 @@ from .addon import addon_prompts, addon_tools
 from .announce import blocked_reason
 from .briefing import async_briefing
 from .departures import still_on
+from .house import house_state
 from .const import (
     CONF_ALARM_BACKUP,
+    CONF_HOUSE_NOTES,
+    CONF_LIVE_HOUSE,
     CONF_ROUTINE_MINUTES,
     DOMAIN,
     LABEL_GLADOS,
@@ -688,6 +691,9 @@ class GladosAPI(llm.API):
             "quiet, stop or shut up, answer in at most three words. Never end a reply "
             "with a question or an offer of more help. "
             f"{file}"
+            + (f"\nHouse notes: {notes_text}" if (notes_text := str(
+                self.data.options.get(CONF_HOUSE_NOTES) or "").strip()) else "")
+            + (f"\n{house_state(self.hass)}" if self.data.options.get(CONF_LIVE_HOUSE, True) else "")
         )
 
     @override
