@@ -1,0 +1,8 @@
+clean_text:
+  fields:
+    text:
+      required: true
+      example: 'It is -3°C and "lovely" 🎂'
+      selector:
+        text:
+          multiline: true

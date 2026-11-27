@@ -1,0 +1,25 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "GLaDOS",
+        "description": "Add GLaDOS to this home. She will be unbearable about it."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "GLaDOS is already installed. One is plenty."
+    }
+  },
+  "services": {
+    "clean_text": {
+      "name": "Clean text for speech",
+      "description": "Returns the text as one line of plain spoken words: no emoji, quotation marks or markdown, units spelled out, negative numbers as minus, and her name spelled for the voice.",
+      "fields": {
+        "text": {
+          "name": "Text",
+          "description": "The text to clean."
+        }
+      }
+    }
+  }
+}
