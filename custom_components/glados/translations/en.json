@@ -71,6 +71,26 @@
               "cold_outside_below": "Below this outside temperature, a window open for 20 minutes gets a reminder, once per opening; in an empty room, she tells whoever is home."
             }
           },
+          "initiative": {
+            "name": "Her own initiative",
+            "description": "Offering heat or cooling, rare facility notices, and one unprompted remark a day.",
+            "data": {
+              "comfort_offers": "Offer heating or cooling",
+              "cold_below": "Cold below",
+              "warm_above": "Warm above",
+              "settled_minutes": "Settled after",
+              "facility_notices": "Facility notices",
+              "idle_remarks": "Idle remark"
+            },
+            "data_description": {
+              "comfort_offers": "When someone has settled in a room that is too cold or warm and its heater or cooler is off, she asks whether to switch it on and listens for yes or no. A no holds for the day.",
+              "cold_below": "Room temperature below which she offers heat.",
+              "warm_above": "Room temperature above which she offers cooling.",
+              "settled_minutes": "Minutes in a room before she offers, so not for someone passing through.",
+              "facility_notices": "Rare, true notices by the Announcer (at most one every three days), and once a night an hour past bedtime with the lights on.",
+              "idle_remarks": "Once a day at a random moment, one unprompted remark about what is going on."
+            }
+          },
           "days": {
             "name": "Reminders, alarms and leaving",
             "description": "Reminders read out, the heads-up before leaving, and the backup for phone alarms.",

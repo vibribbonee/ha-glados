@@ -57,7 +57,7 @@ async def test_options_flow(home: Home) -> None:
     flow = await hass.config_entries.options.async_init(entry.entry_id)
     # The form comes in sections; only Brain is open.
     sections = [k.schema for k in flow["data_schema"].schema]
-    assert sections == ["brain", "voices", "warnings", "days", "nights"]
+    assert sections == ["brain", "voices", "warnings", "initiative", "days", "nights"]
     result = await hass.config_entries.options.async_configure(
         flow["flow_id"],
         {
@@ -78,6 +78,13 @@ async def test_options_flow(home: Home) -> None:
     options = entry.runtime_data.options
     assert options["routine_minutes"] == 40 and options["co2_alerts"] == "announcer"
     assert options["bedtime_nudges"] is False and options["beep_in"] == ""  # stored flat
+
+    # A section left out keeps what was there: CO2 warnings stay on.
+    flow = await hass.config_entries.options.async_init(entry.entry_id)
+    await hass.config_entries.options.async_configure(
+        flow["flow_id"], {"brain": {"chat_agent": "conversation.chat", "personality": False}})
+    await hass.async_block_till_done()
+    assert entry.runtime_data.options["co2_alerts"] == "announcer"
 
 
 async def test_user_flow(hass: HomeAssistant) -> None:

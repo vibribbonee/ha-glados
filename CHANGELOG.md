@@ -8,11 +8,13 @@
 
 - **Mornings in the integration.** Between 20:00 and 05:00, a phone going on a wireless charger notes when someone fell asleep. A morning alarm (a phone's next alarm, or an alarm clock's alarm-ringing sensor) fades on the lights labelled `glados_wakeup` while it's dark, sets a leave time (alarm plus their morning routine) if none is set for today, and once they're out of bed she greets them: the Announcer's "you have been in suspension for 7 hours and 33 minutes", then GLaDOS with the morning briefing. No alarm: the first time a light labelled `glados` goes on in their room. On their birthday: the **Birthday song**, then a fixed birthday line with their first commitment. Once per person per day. Settings: **Morning greeting**, **Birthday song**, **Birthday names** (such as `nico: Sjors`). `glados.greet` tests it, `pretend_birthday` too.
 - **Bedtime per person.** Each person's bedtime is their next morning alarm minus the **Sleep goal** (8 hours); without an alarm, the **Usual bedtime** if set. Last call is the alarm minus the **Minimum sleep** (6 hours). In their own room: an hour before (bedtime plus the one thing that matters for tomorrow, from the briefing), at bedtime, and the Announcer's last call when the lights are still on. Never for someone in bed or in the dark. New sensors per person: **Bedtime <name>** and **Last call <name>**, for dashboards.
+- **Her own initiative,** a new settings section. **Comfort offers:** someone settled in a room that's too cold (16) or warm (25) with its heater or cooler off: she asks out loud whether to switch it on and listens for yes or no; a no holds for the day, a yes for three hours, and she sometimes "misspeaks" about neurotoxin. **Facility notices:** rare and true (move after three hours in one room; a coat in the cold), at most one every three days, plus once a night an hour past someone's bedtime with the lights on. **Idle remark:** once a day, one unprompted remark about something real in the room. Questions and replies are fixed set pieces; the idle remark stays improvised so it's fresh.
 - **The first add-on: [GLaDOS trains](https://github.com/vibribbonee/ha-glados-trains).** Its own repository and HACS install.
 
 ### To do when installing
 - Turn off `automation.glados_time_to_leave`, or it is said twice.
 - Turn off `automation.glados_good_morning` and `automation.glados_notes_when_you_go_to_sleep`; set **Birthday song** to your song and **Birthday names** from `input_text.glados_birthday_names`.
+- Turn off `automation.glados_offers_heating_or_cooling`, `automation.glados_idle_remark` and `automation.glados_facility_notices`; carry over `input_number.glados_cold_below`, `glados_warm_above` and `glados_settled_after_minutes`.
 - In `automation.bedroom_bedtime_nudge`, remove the "GLaDOS says the nudge in the room" step (her bedtime nudges replace it); set **Sleep goal**, **Minimum sleep** and **Usual bedtime** from `input_number.sleep_goal`, `input_number.minimum_sleep` and `input_datetime.target_bedtime`.
 - After installing GLaDOS trains: turn off `automation.glados_train_reminders` and hide `script.set_train_reminder` from her.
 
@@ -37,6 +39,7 @@ One release instead of many small ones, so the house restarts once.
 - **One heartbeat.** Her background features run in turn on one timer; one that fails is logged once and the others carry on. A slow beat (a busy voice agent) is never piled up.
 
 ### Fixed
+- Settings: a section left out of a settings change keeps its values instead of falling back to the defaults.
 - Leave times read back in local time.
 - An announcement for someone known to be awake (a bedtime nudge) is no longer silenced by the "before an alarm, people may be asleep" rule.
 - **GLaDOS's chime-in no longer reads her instructions aloud.** The Announcer's line now goes to her as the fact, the extra instruction stays short, a reply that repeats the instruction is dropped (the Announcer stands alone), and a reply that opens by repeating the Announcer is trimmed.

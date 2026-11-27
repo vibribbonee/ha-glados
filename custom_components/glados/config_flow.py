@@ -6,6 +6,7 @@ settings to change a voice:
 - brain: the chat agent, her personality, the home town, the voice agent;
 - voices: the Announcer, the beeps, the speaking schedule;
 - warnings: CO2 and windows;
+- initiative: comfort offers, facility notices, the idle remark;
 - days: reminders, alarms, leave times, the morning routine;
 - nights: the morning greeting, birthdays, bedtime.
 """
@@ -38,19 +39,25 @@ from .const import (
     CONF_BIRTHDAY_SONG,
     CONF_CHAT_AGENT,
     CONF_CO2_ALERTS,
+    CONF_COLD_BELOW,
+    CONF_COMFORT,
     CONF_CO2_REMINDER,
     CONF_COLD_OUTSIDE,
     CONF_HOME_TOWN,
+    CONF_IDLE,
     CONF_LEAVE_HEADS_UP,
     CONF_MIN_SLEEP,
     CONF_MORNING,
+    CONF_NOTICES,
     CONF_PERSONALITY,
     CONF_REMINDERS,
     CONF_ROUTINE_MINUTES,
     CONF_SCHEDULE,
+    CONF_SETTLED,
     CONF_SLEEP_GOAL,
     CONF_USUAL_BEDTIME,
     CONF_VOICE_AGENT,
+    CONF_WARM_ABOVE,
     DEFAULTS,
     DOMAIN,
 )
@@ -89,6 +96,14 @@ SECTIONS: dict[str, list[Field]] = {
         (CONF_CO2_REMINDER, True, _number(0, 240, 5, "min"), int),
         (CONF_COLD_OUTSIDE, True, _number(-20, 25, 1, "°C"), float),
     ],
+    "initiative": [
+        (CONF_COMFORT, True, SWITCH, bool),
+        (CONF_COLD_BELOW, True, _number(5, 25, 0.5, "°C"), float),
+        (CONF_WARM_ABOVE, True, _number(18, 35, 0.5, "°C"), float),
+        (CONF_SETTLED, True, _number(1, 60, 1, "min"), int),
+        (CONF_NOTICES, True, SWITCH, bool),
+        (CONF_IDLE, True, SWITCH, bool),
+    ],
     "days": [
         (CONF_REMINDERS, True, SWITCH, bool),
         (CONF_LEAVE_HEADS_UP, True, _number(0, 120, 5, "min"), int),
@@ -112,7 +127,7 @@ _STORE = {key: store for fields in SECTIONS.values() for key, _, _, store in fie
 
 def _marker(key: str, required: bool, current: dict[str, Any]) -> vol.Marker:
     value = current.get(key)
-    if required and isinstance(value, bool | int | float) and value != "":
+    if required and value not in (None, ""):
         return vol.Required(key, default=value)
     hint = {"suggested_value": value} if value not in (None, "") else None
     return (vol.Required if required else vol.Optional)(key, description=hint)
@@ -128,18 +143,31 @@ def _setup_schema(current: dict[str, Any]) -> vol.Schema:
 
 def _options_schema(current: dict[str, Any]) -> vol.Schema:
     return vol.Schema({
-        vol.Required(name): section(_fields(fields, current), {"collapsed": name != "brain"})
+        # Optional: a section left out keeps its defaults instead of failing the form.
+        (vol.Required(name) if name == "brain" else vol.Optional(name, default={})): section(
+            _fields(fields, current), {"collapsed": name != "brain"})
         for name, fields in SECTIONS.items()
     })
 
 
-def clean_options(user_input: dict[str, Any]) -> dict[str, Any]:
-    """Every option stored flat; a text field the form left out was cleared."""
-    flat: dict[str, Any] = {}
+def clean_options(
+    user_input: dict[str, Any], current: dict[str, Any] | None = None
+) -> dict[str, Any]:
+    """Every option stored flat.
+
+    In a section that was sent, a text field left out was cleared. A section
+    that was not sent at all keeps the current values.
+    """
+    data = {**DEFAULTS, **(current or {})}
     for key, value in user_input.items():
-        flat.update(value if key in SECTIONS and isinstance(value, dict) else {key: value})
-    data = dict(DEFAULTS)
-    data.update(flat)
+        if key in SECTIONS and isinstance(value, dict):
+            if value:
+                for field, required, _, store in SECTIONS[key]:
+                    if not required and field not in value:
+                        data[field] = ""
+            data.update(value)
+        else:
+            data[key] = value
     for key, store in _STORE.items():
         if data.get(key) is not None:
             data[key] = store(data[key])
@@ -175,7 +203,7 @@ class GladosOptionsFlow(OptionsFlow):
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """One form, five sections."""
-        if user_input is not None:
-            return self.async_create_entry(data=clean_options(user_input))
         current = {**DEFAULTS, **self.config_entry.options}
+        if user_input is not None:
+            return self.async_create_entry(data=clean_options(user_input, current))
         return self.async_show_form(step_id="init", data_schema=_options_schema(current))

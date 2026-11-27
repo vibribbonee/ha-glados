@@ -341,3 +341,68 @@ def last_call_lines(by: str, hours: float, alarm: str,
     h = f"{hours:g}"
     return (f"Last call. Be in bed by {by}. Otherwise, sleep will be under {h} hours before "
             f"the {alarm} alarm.", (rng or random).choice(_LAST_CALL_GLADOS))
+
+
+# Comfort: she offers heat or cool. The question must end in a clear yes or no.
+
+_COMFORT_ASK = {
+    "heat": (
+        "It is {t} degrees in the {room}. Cold enough to preserve specimens. Shall I switch on the {device}?",
+        "{t} degrees in the {room}. Your teeth are about to start chattering, and it's distracting. Shall I switch on the {device}?",
+    ),
+    "cool": (
+        "It is {t} degrees in the {room}. You're starting to smell like a failed experiment. Shall I switch on the {device}?",
+        "{t} degrees in the {room}. Human performance drops in the heat. Yours had less to lose. Shall I switch on the {device}?",
+    ),
+}
+_COMFORT_YES = {
+    "heat": (
+        "Raising the neurotoxin levels... Temperature. I meant temperature. The {device} is on.",
+        "The {device} is on. Neurotoxin emitters are warming up nicely... The heater. The heater is warming up.",
+        "The {device} is on. Try not to get used to comfort.",
+    ),
+    "cool": (
+        "Venting the neurotoxin... Cool air. I meant cool air. The {device} is on.",
+        "The {device} is on. Your fragile thermoregulation thanks me. I'll take it as thanks, anyway.",
+    ),
+}
+_COMFORT_NO = (
+    "Fine. Shiver, then. For science.",
+    "As you wish. I'll note your resilience. And your stubbornness.",
+    "Very well. I won't ask again today. I won't need to.",
+)
+COMFORT_YES_WORDS = [
+    "yes", "yeah", "yep", "yes please", "sure", "please", "please do", "do it", "go ahead",
+    "ok", "okay", "turn it on", "switch it on", "go for it", "why not", "ja", "graag", "doe maar",
+]
+COMFORT_NO_WORDS = [
+    "no", "nope", "no thanks", "no thank you", "don't", "do not", "leave it", "leave it off",
+    "i'm fine", "not now", "never mind", "nee", "laat maar",
+]
+
+
+def comfort_lines(kind: str, t: float, room: str, device: str,
+                  rng: random.Random | None = None) -> tuple[str, str, str]:
+    """(question, reply to yes, reply to no) for heat or cool."""
+    pick = (rng or random).choice
+    fmt = {"t": round(t), "room": room, "device": device}
+    return (pick(_COMFORT_ASK[kind]).format(**fmt), pick(_COMFORT_YES[kind]).format(**fmt),
+            pick(_COMFORT_NO))
+
+
+# Facility notices: rare, true, read by the Announcer.
+
+def notice_lines(room: str, hours: int, outside: float | None) -> list[str]:
+    """Notices that are true right now; empty when nothing fits."""
+    found = []
+    if hours >= 3:
+        found.append(f"Attention. Test subjects are reminded. To move occasionally. You have "
+                     f"been stationary in the {room} for {hours} hours.")
+    if outside is not None and outside <= 2:
+        found.append(f"This is a weather advisory. The outside temperature is {round(outside)} "
+                     "degrees. The Enrichment Center recommends. A coat.")
+    return found
+
+
+LATE_NOTICE = ("Attention. Testing hours have ended. All test subjects. Please proceed. "
+               "To your suspension chambers. Lights out is mandatory.")

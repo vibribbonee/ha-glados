@@ -42,6 +42,7 @@ from .alarms import AlarmClock
 from .departures import Departures
 from .heartbeat import Heartbeat
 from .bedtime import Bedtimes
+from .character import Character
 from .morning import Mornings
 from .reminders import Reminders
 from .announce import AnnounceRequest, Announcer
@@ -211,6 +212,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: GladosConfigEntry) -> bo
     heart.add("bedtime", Bedtimes(hass, run).async_tick)
     air = AirWatch(hass, run)
     heart.add("air and windows", air.async_tick)
+    heart.add("her own initiative", Character(hass, run).async_tick)
     entry.async_on_unload(heart.start())
 
     @callback

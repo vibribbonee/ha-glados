@@ -57,6 +57,12 @@ CONF_BEDTIME = "bedtime_nudges"  # per person: an hour before, bedtime, last cal
 CONF_SLEEP_GOAL = "sleep_goal_hours"
 CONF_MIN_SLEEP = "minimum_sleep_hours"
 CONF_USUAL_BEDTIME = "usual_bedtime"  # HH:MM, for nights without a morning alarm
+CONF_COMFORT = "comfort_offers"  # ask to switch heating or cooling on
+CONF_COLD_BELOW = "cold_below"
+CONF_WARM_ABOVE = "warm_above"
+CONF_SETTLED = "settled_minutes"  # in the room this long: not just passing through
+CONF_NOTICES = "facility_notices"
+CONF_IDLE = "idle_remarks"
 CONF_MORNING = "morning_greeting"  # wake-up greeting, birthday, "in suspension for"
 CONF_BIRTHDAY_SONG = "birthday_song"  # media id, played before the birthday line
 CONF_BIRTHDAY_NAMES = "birthday_names"  # "nico: Sjors, Nico; byte: Bee"
@@ -83,6 +89,12 @@ DEFAULTS: dict[str, str | int | bool] = {
     CONF_BEDTIME_SENSOR: "",
     CONF_LEAVE_HEADS_UP: 15,
     CONF_MORNING: True,
+    CONF_COMFORT: True,
+    CONF_COLD_BELOW: 16,
+    CONF_WARM_ABOVE: 25,
+    CONF_SETTLED: 10,
+    CONF_NOTICES: True,
+    CONF_IDLE: True,
     CONF_BEDTIME: True,
     CONF_SLEEP_GOAL: 8,
     CONF_MIN_SLEEP: 6,
