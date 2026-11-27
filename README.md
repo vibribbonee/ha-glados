@@ -128,7 +128,13 @@ With **GLaDOS** ticked under the chat agent's **Control Home Assistant**, she ge
 
 ## Add-ons
 
-GLaDOS needs only a chat agent. Features that depend on another integration, such as train times, are separate add-ons you install next to her. Writing one: [docs/ADDONS.md](docs/ADDONS.md).
+GLaDOS needs only a chat agent. Features that depend on another integration are separate add-ons you install next to her:
+
+| Add-on | Needs | Adds |
+|---|---|---|
+| [GLaDOS trains](https://github.com/vibribbonee/ha-glados-trains) | Train departure sensors (NS works best) | Which train to catch, a heads-up, and when to leave, with live delays |
+
+Writing one: [docs/ADDONS.md](docs/ADDONS.md).
 
 ## Development
 
