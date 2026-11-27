@@ -43,7 +43,7 @@ async def test_announcer_reads_facts_with_beeps(home: Home) -> None:
         AnnounceRequest(facts="Departure in fifteen minutes.", voice="announcer")
     )
     assert result == {"spoken": True, "reason": "", "speech": "Departure in fifteen minutes.",
-                      "area": home.bedroom}
+                      "after": "", "area": home.bedroom}
     first, last = calls[0].data, calls[-1].data
     assert first["entity_id"] == "assist_satellite.puck_3"
     assert first["media_id"].startswith("media-source://tts/tts.piper_2?message=Departure")
@@ -96,7 +96,7 @@ async def test_quiet_rules(home: Home) -> None:
         AnnounceRequest(facts="x", voice="announcer", ignore_schedule=True)
     )
     assert result == {"spoken": False, "reason": "the bedroom is dark, people may be asleep",
-                      "speech": "", "area": home.bedroom}
+                      "speech": "", "after": "", "area": home.bedroom}
 
 
 async def test_no_free_satellite(home: Home) -> None:
@@ -133,3 +133,22 @@ async def test_bare_install_uses_her_own_voice_and_no_beeps(home: Home) -> None:
         {"entity_id": "assist_satellite.puck_3",
          "message": "Departure in fifteen minutes.", "preannounce": False}
     ]
+
+
+async def test_the_test_announcement(home: Home) -> None:
+    # On the chosen satellite, with the room's real CO2, GLaDOS after the Announcer.
+    announcer, calls = _announcer(home)
+    with patch(
+        "custom_components.glados.announce.async_say",
+        AsyncMock(return_value="Breathe normally. While you still can."),
+    ) as say:
+        result = await announcer.async_test("assist_satellite.office_puck")
+    assert result["spoken"] and result["after"] == "Breathe normally. While you still can."
+    assert {c.data["entity_id"] for c in calls} == {"assist_satellite.office_puck"}
+    assert "Office" in calls[0].data["media_id"] or "office" in calls[0].data["media_id"].lower()
+    # The office has no CO2 sensor; the bedroom one reads 1240.
+    announcer, calls = _announcer(home)
+    with patch("custom_components.glados.announce.async_say", AsyncMock(return_value="x")) as say:
+        await announcer.async_test("assist_satellite.puck_3")
+    assert "1240%20parts%20per%20million" in calls[0].data["media_id"]
+    assert "real reading is 1240" in say.call_args.kwargs["task"]

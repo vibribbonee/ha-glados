@@ -12,6 +12,7 @@ SERVICE_ROOM_CONTEXT = "room_context"
 SERVICE_REMEMBER = "remember"
 SERVICE_RECALL = "recall"
 SERVICE_WHO = "who"
+SERVICE_TEST_ANNOUNCEMENT = "test_announcement"
 
 # Service fields
 ATTR_TEXT = "text"
@@ -26,6 +27,7 @@ ATTR_GLADOS_AFTER = "glados_after"
 ATTR_KEY = "key"
 ATTR_VALUE = "value"
 ATTR_PERSON = "person"
+ATTR_SATELLITE = "satellite"
 
 VOICE_GLADOS = "glados"
 VOICE_ANNOUNCER = "announcer"

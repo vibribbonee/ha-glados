@@ -56,6 +56,16 @@ announce:
     glados_after:
       selector:
         text:
+    satellite:
+      selector:
+        entity:
+          domain: assist_satellite
+test_announcement:
+  fields:
+    satellite:
+      selector:
+        entity:
+          domain: assist_satellite
 who:
   fields:
     person:

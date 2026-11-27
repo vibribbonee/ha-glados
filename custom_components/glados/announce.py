@@ -29,7 +29,7 @@ from .const import (
     LABEL_OWN_CHIME,
     VOICE_ANNOUNCER,
 )
-from .registry import label_entities
+from .registry import area_of, area_name, label_entities
 from .rooms import RoomContext, describe
 from .speech import clean_for_speech
 from .voice import async_say
@@ -46,6 +46,7 @@ class AnnounceRequest:
     anywhere: bool = True
     voice: str = "glados"
     glados_after: str = ""
+    satellite: str | None = None  # speak on this one, whatever room it is in
 
 
 def blocked_reason(ctx: RoomContext, ignore_schedule: bool, anywhere: bool) -> str:
@@ -98,12 +99,13 @@ class Announcer:
         self, req: AnnounceRequest, context: Context | None = None
     ) -> dict[str, Any]:
         """Announce, or explain why not."""
-        ctx = describe(self.hass, req.area, str(self.options[CONF_SCHEDULE] or "") or None)
-        reason = blocked_reason(ctx, req.ignore_schedule, req.anywhere)
+        area = req.area or (area_of(self.hass, req.satellite) if req.satellite else None)
+        ctx = describe(self.hass, area, str(self.options[CONF_SCHEDULE] or "") or None)
+        reason = blocked_reason(ctx, req.ignore_schedule, req.anywhere or bool(req.satellite))
         if reason:
-            return {"spoken": False, "reason": reason, "speech": "", "area": ctx.area}
+            return {"spoken": False, "reason": reason, "speech": "", "after": "", "area": ctx.area}
 
-        satellite = ctx.satellite or (ctx.any_satellite if req.anywhere else "")
+        satellite = req.satellite or ctx.satellite or (ctx.any_satellite if req.anywhere else "")
         own_chime = satellite in label_entities(self.hass, LABEL_OWN_CHIME)
         beep_in = str(self.options[CONF_BEEP_IN] or "")
         beep_out = str(self.options[CONF_BEEP_OUT] or "")
@@ -111,17 +113,11 @@ class Announcer:
         if chime["preannounce"]:
             chime["preannounce_media_id"] = beep_in
 
+        after = ""
         if req.voice == VOICE_ANNOUNCER:
             line = clean_for_speech(req.facts)
-            announcer = str(self.options[CONF_ANNOUNCER_VOICE] or "")
-            if announcer:
-                await self._play(
-                    satellite, media_id=announcer_media_id(announcer, line), **chime
-                )
-            else:
-                # No Announcer voice set up: the satellite's own voice reads it.
-                await self._play(satellite, message=line, **chime)
             if req.glados_after:
+                # Written before anything plays, so she follows without a pause.
                 after = await async_say(
                     self.hass,
                     self.options,
@@ -132,8 +128,16 @@ class Announcer:
                     ),
                     context=context,
                 )
-                if after:
-                    await self._play(satellite, message=after, preannounce=False)
+            announcer = str(self.options[CONF_ANNOUNCER_VOICE] or "")
+            if announcer:
+                await self._play(
+                    satellite, media_id=announcer_media_id(announcer, line), **chime
+                )
+            else:
+                # No Announcer voice set up: the satellite's own voice reads it.
+                await self._play(satellite, message=line, **chime)
+            if after:
+                await self._play(satellite, message=after, preannounce=False)
         else:
             who = (
                 f"The person in the room is {ctx.people[0]}. "
@@ -151,4 +155,39 @@ class Announcer:
 
         if not own_chime and beep_out:
             await self._play(satellite, media_id=beep_out, preannounce=False)
-        return {"spoken": True, "reason": "", "speech": line, "area": ctx.area}
+        return {"spoken": True, "reason": "", "speech": line, "after": after, "area": ctx.area}
+
+    async def async_test(
+        self, satellite: str | None = None, context: Context | None = None
+    ) -> dict[str, Any]:
+        """The whole show once: beep, the Announcer on the air, GLaDOS, beep.
+
+        Uses the room's real CO2 reading, so it also shows the sensors work.
+        """
+        area = area_of(self.hass, satellite) if satellite else None
+        ctx = describe(self.hass, area, None)
+        room = area_name(self.hass, ctx.area) if ctx.area else "facility"
+        if ctx.co2:
+            reading = f"Carbon dioxide in the {room} has reached {round(ctx.co2)} parts per million."
+            real = f"The real reading is {round(ctx.co2)} parts per million."
+        else:
+            reading = f"Air quality in the {room} has reached critical levels."
+            real = "There is no real reading."
+        return await self.async_announce(
+            AnnounceRequest(
+                facts=(
+                    f"Warning. {reading} Atmospheric integrity is compromised. All test "
+                    "subjects should proceed to the nearest window. This is not a drill."
+                ),
+                voice=VOICE_ANNOUNCER,
+                area=ctx.area,
+                satellite=satellite,
+                ignore_schedule=True,
+                glados_after=(
+                    f"{real} Brush the alarm off as if it is nothing to worry about, in a "
+                    "way that makes it obvious it is actually rather serious: a reassurance "
+                    "that turns sinister. One or two short sentences."
+                ),
+            ),
+            context,
+        )

@@ -119,6 +119,10 @@
         "glados_after": {
           "name": "GLaDOS chimes in",
           "description": "With the Announcer: a task for one GLaDOS remark right after."
+        },
+        "satellite": {
+          "name": "Satellite",
+          "description": "Speak on this satellite, whatever room it is in. Empty: the room's own."
         }
       }
     },
@@ -154,6 +158,23 @@
           "name": "Key",
           "description": "Such as air bedroom."
         }
+      }
+    },
+    "test_announcement": {
+      "name": "Test announcement",
+      "description": "Plays the whole show once: the opening beep, the facility Announcer warning about the room's real CO2 level, GLaDOS brushing it off, and the closing beep. Still quiet while someone sleeps.",
+      "fields": {
+        "satellite": {
+          "name": "Satellite",
+          "description": "Where to play it. Empty: the room people are in."
+        }
+      }
+    }
+  },
+  "entity": {
+    "button": {
+      "test_announcement": {
+        "name": "Test announcement"
       }
     }
   }

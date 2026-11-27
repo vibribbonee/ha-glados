@@ -43,6 +43,7 @@ from .const import (
     ATTR_KEY,
     ATTR_PERSON,
     ATTR_REQUEST,
+    ATTR_SATELLITE,
     ATTR_TASK,
     ATTR_TEXT,
     ATTR_VALUE,
@@ -57,6 +58,7 @@ from .const import (
     SERVICE_REMEMBER,
     SERVICE_ROOM_CONTEXT,
     SERVICE_SAY,
+    SERVICE_TEST_ANNOUNCEMENT,
     SERVICE_WHO,
     VOICE_ANNOUNCER,
     VOICE_GLADOS,
@@ -77,7 +79,7 @@ from .rooms import describe
 from .speech import clean_for_speech
 from .voice import async_say
 
-PLATFORMS = [Platform.CONVERSATION]
+PLATFORMS = [Platform.BUTTON, Platform.CONVERSATION]
 
 SERVICES = (
     SERVICE_CLEAN_TEXT,
@@ -87,6 +89,7 @@ SERVICES = (
     SERVICE_WHO,
     SERVICE_REMEMBER,
     SERVICE_RECALL,
+    SERVICE_TEST_ANNOUNCEMENT,
 )
 
 CLEAN_TEXT_SCHEMA = vol.Schema({vol.Required(ATTR_TEXT): cv.string})
@@ -109,8 +112,10 @@ ANNOUNCE_SCHEMA = vol.Schema(
             [VOICE_GLADOS, VOICE_ANNOUNCER]
         ),
         vol.Optional(ATTR_GLADOS_AFTER, default=""): cv.string,
+        vol.Optional(ATTR_SATELLITE): cv.entity_id,
     }
 )
+TEST_SCHEMA = vol.Schema({vol.Optional(ATTR_SATELLITE): cv.entity_id})
 WHO_SCHEMA = vol.Schema({vol.Optional(ATTR_PERSON, default=""): cv.string})
 REMEMBER_SCHEMA = vol.Schema(
     {vol.Required(ATTR_KEY): cv.string, vol.Required(ATTR_VALUE): cv.string}
@@ -173,8 +178,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: GladosConfigEntry) -> bo
             anywhere=call.data[ATTR_ANYWHERE],
             voice=call.data[ATTR_VOICE],
             glados_after=call.data[ATTR_GLADOS_AFTER],
+            satellite=call.data.get(ATTR_SATELLITE),
         )
         return await data().announcer.async_announce(req, call.context)
+
+    async def _test(call: ServiceCall) -> ServiceResponse:
+        return await data().announcer.async_test(call.data.get(ATTR_SATELLITE), call.context)
 
     async def _who(call: ServiceCall) -> ServiceResponse:
         person = resolve_person(hass, call.data[ATTR_PERSON], call.context.user_id)
@@ -214,6 +223,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: GladosConfigEntry) -> bo
     register(DOMAIN, SERVICE_SAY, _say, SAY_SCHEMA, SupportsResponse.ONLY)
     register(DOMAIN, SERVICE_ROOM_CONTEXT, _room_context, ROOM_SCHEMA, SupportsResponse.ONLY)
     register(DOMAIN, SERVICE_ANNOUNCE, _announce, ANNOUNCE_SCHEMA, SupportsResponse.OPTIONAL)
+    register(DOMAIN, SERVICE_TEST_ANNOUNCEMENT, _test, TEST_SCHEMA, SupportsResponse.OPTIONAL)
     register(DOMAIN, SERVICE_WHO, _who, WHO_SCHEMA, SupportsResponse.ONLY)
     register(DOMAIN, SERVICE_REMEMBER, _remember, REMEMBER_SCHEMA)
     register(DOMAIN, SERVICE_RECALL, _recall, RECALL_SCHEMA, SupportsResponse.ONLY)
