@@ -19,6 +19,7 @@ from .const import (
     CONF_ALARM_BACKUP,
     CONF_ANNOUNCER_VOICE,
     CONF_BEEP_IN,
+    CONF_BEDTIME_SENSOR,
     CONF_BEEP_OUT,
     CONF_CO2_ALERTS,
     CONF_CO2_REMINDER,
@@ -67,6 +68,9 @@ def _options_schema(current: dict[str, Any]) -> vol.Schema:
             opt(CONF_BEEP_OUT): TEXT,
             opt(CONF_SCHEDULE): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain="schedule")
+            ),
+            opt(CONF_BEDTIME_SENSOR): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="sensor", device_class="timestamp")
             ),
             vol.Required(CONF_REMINDERS, default=bool(current[CONF_REMINDERS])): (
                 selector.BooleanSelector()

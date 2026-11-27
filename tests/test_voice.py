@@ -58,3 +58,25 @@ async def test_which_agent_rewrites(hass: HomeAssistant) -> None:
     )
     # No agent at all: the plain facts are spoken, cleaned.
     assert await async_say(hass, {}, "It is 3°C.") == "It is 3 degrees."
+
+
+async def test_a_task_read_back_is_dropped(hass: HomeAssistant) -> None:
+    from custom_components.glados.voice import echoes
+    task = "Reply to the Announcer in one short remark. Be surprised and shocked."
+    echo = "The Announcer in one short remark. Be surprised and shocked."
+    assert echoes(echo, task) and not echoes("Oh. How brave of you.", task)
+    with patch(
+        "custom_components.glados.voice.conversation.async_converse",
+        AsyncMock(return_value=_reply(echo)),
+    ):
+        # An optional remark falls back to nothing; a real message to the facts.
+        assert await async_say(hass, {"chat_agent": "conversation.x"}, "x", task=task, fallback="") == ""
+        assert await async_say(hass, {"chat_agent": "conversation.x"}, "Leave now.", task=task) == "Leave now."
+
+
+def test_drop_the_announcers_line() -> None:
+    from custom_components.glados.voice import drop_repeat
+    said = "I like kissing boys."
+    reply = "The facility Announcer announced: I like kissing boys. How... unexpected."
+    assert drop_repeat(reply, said) == "How... unexpected."
+    assert drop_repeat("How brave.", said) == "How brave."

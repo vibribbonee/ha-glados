@@ -33,7 +33,7 @@ from .registry import area_of, area_name, label_entities
 from .rooms import RoomContext, describe
 from .setpieces import CO2_CRITICAL, STYLE_ANNOUNCER
 from .speech import clean_for_speech
-from .voice import async_say
+from .voice import async_say, drop_repeat
 
 
 @dataclass
@@ -124,16 +124,20 @@ class Announcer:
             line = clean_for_speech(req.facts)
             if req.glados_after and not after:
                 # Written before anything plays, so she follows without a pause.
+                # The Announcer's line is the fact; her instruction is short and
+                # holds nothing worth reading aloud. No remark beats an echo.
                 after = await async_say(
                     self.hass,
                     self.options,
-                    req.facts,
+                    f"The facility Announcer announced: {req.facts}",
                     task=(
-                        "The facility Announcer just said this. You chime in right "
-                        f"after it with one short remark of your own. {req.glados_after}"
-                    ),
+                        "Reply to the Announcer in one short remark. Never repeat what it "
+                        f"said. {req.glados_after}"
+                    ).strip(),
                     context=context,
+                    fallback="",
                 )
+                after = drop_repeat(after, line)
             announcer = str(self.options[CONF_ANNOUNCER_VOICE] or "")
             if announcer:
                 await self._play(

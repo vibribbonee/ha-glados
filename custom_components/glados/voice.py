@@ -8,6 +8,7 @@ says nothing, the plain facts are spoken instead, so a reminder is never lost.
 from __future__ import annotations
 
 import logging
+import re
 from typing import Any
 
 from homeassistant.components import conversation
@@ -24,6 +25,33 @@ _LOGGER = logging.getLogger(__name__)
 def build_prompt(facts: str, request: str = "", task: str = "") -> str:
     """The text the voice agent receives."""
     return f"REQUEST: {request}\nFACTS: {facts}\nTASK: {task or 'none'}"
+
+
+def _words(text: str) -> list[str]:
+    return re.findall(r"[a-z']+", text.lower())
+
+
+def echoes(line: str, task: str) -> bool:
+    """True when the reply repeats the instructions instead of following them.
+
+    Small models sometimes answer a TASK by reading it back. Six task words in
+    a row inside the reply is never a coincidence.
+    """
+    words, said = _words(task), " ".join(_words(line))
+    return any(
+        " ".join(words[i : i + 6]) in said for i in range(max(0, len(words) - 5))
+    )
+
+
+def drop_repeat(line: str, said: str) -> str:
+    """Cut a reply's opening repeat of what was just said (the Announcer's line)."""
+    text = re.sub(r"^\s*the facility announcer (just )?(announced|said)[:,]?\s*", "", line, flags=re.I)
+    target = " ".join(_words(said))
+    words = text.split()
+    for n in range(len(words), 0, -1):
+        if " ".join(_words(" ".join(words[:n]))) == target:
+            return " ".join(words[n:]).strip()
+    return text.strip()
 
 
 def voice_agent(hass: HomeAssistant, options: dict[str, Any]) -> tuple[str, str | None]:
@@ -46,11 +74,17 @@ async def async_say(
     request: str = "",
     task: str = "",
     context: Context | None = None,
+    fallback: str | None = None,
 ) -> str:
-    """The facts in her voice, cleaned for speech."""
+    """The facts in her voice, cleaned for speech.
+
+    When the agent fails, says nothing or reads the task back, the fallback is
+    spoken: the plain facts by default, or nothing for a remark that is optional.
+    """
+    spare = facts if fallback is None else fallback
     agent_id, instructions = voice_agent(hass, options)
     if not agent_id:
-        return clean_for_speech(facts)
+        return clean_for_speech(spare)
     line = ""
     try:
         result = await conversation.async_converse(
@@ -64,4 +98,7 @@ async def async_say(
         line = (result.response.speech.get("plain", {}).get("speech") or "").strip()
     except (HomeAssistantError, ValueError) as err:
         _LOGGER.warning("Voice agent %s failed, speaking the plain facts: %s", agent_id, err)
-    return clean_for_speech(line or facts)
+    if line and task and echoes(line, task):
+        _LOGGER.debug("Voice agent read the task back, dropped: %s", line)
+        line = ""
+    return clean_for_speech(line or spare)

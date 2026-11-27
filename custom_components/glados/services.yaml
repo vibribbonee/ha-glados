@@ -109,3 +109,16 @@ recall:
       example: air bedroom
       selector:
         text:
+briefing:
+  fields:
+    morning:
+      default: false
+      selector:
+        boolean:
+    area:
+      selector:
+        area:
+    plain:
+      default: false
+      selector:
+        boolean:

@@ -31,6 +31,7 @@ from homeassistant.util import dt as dt_util
 
 from .audio import audible_player, find_player
 from .announce import blocked_reason
+from .briefing import async_briefing
 from .const import (
     CONF_ALARM_BACKUP,
     CONF_ROUTINE_MINUTES,
@@ -659,8 +660,30 @@ class LeavingCheck(GladosTool):
         )
 
 
+class Briefing(GladosTool):
+    name = "briefing"
+    title = "Bedtime or morning briefing"
+    description = (
+        "Good night, 'what's on tomorrow', 'do I need an alarm', 'when should I get "
+        "up', or good morning and 'what's on today': the calendar, alarms, leave times, "
+        "phones that need charging and the weather, already said in your voice with "
+        "only what matters. morning true for the rest of today. Reply with the say "
+        "sentence exactly as returned, adding nothing."
+    )
+    annotations = _READS
+    parameters = p.Schema(
+        {p.Optional("morning", description="true for today, false for tomorrow.", default=False): p.Boolean()}
+    )
+
+    async def run(self, hass, args, llm_context):
+        result = await async_briefing(
+            hass, self.data.options, args["morning"], _here(hass, llm_context), llm_context.context
+        )
+        return llm.ToolResult(data={"say": result["say"]})
+
+
 TOOLS = (SetReminder, SetLeaveTime, AddToCalendar, UpcomingEvents, NoteInFile, SetVolume,
-         SetAlarm, StopAlarm, Broadcast, LeavingCheck)
+         SetAlarm, StopAlarm, Broadcast, LeavingCheck, Briefing)
 
 
 class GladosAPI(llm.API):

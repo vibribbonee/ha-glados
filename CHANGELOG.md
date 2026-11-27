@@ -8,12 +8,16 @@ One release instead of many small ones, so the house restarts once.
 - **Reminders are read out by the integration.** Every to-do with a due time on a person's own list (`todo.<person>_s_list`) or the shared To-do list is said when it comes due, by the Announcer in the room that person is in, with their name when more people are home. Away, or when it can't be said: their phone. Voice reminders are ticked off once delivered. Setting: **Read out reminders** (on).
 - **Nothing is lost overnight.** A reminder that comes due while someone sleeps goes to their phone quietly *and* is kept: the first time that room is awake, the Announcer says what came due in the night, with the times.
 - **A reminder missed during a restart is still said**, up to an hour late. The old automation only caught the exact minute.
+- **The bedtime and morning briefing in Python.** Tomorrow at bedtime, or the rest of today in the morning: the calendar, each person's alarm and whether it's early enough (their morning routine before the first commitment, half an hour more when it has a location), leave times and when to be up, phones that won't last the night, the bedtime sensor and the weather. She picks the two or three that matter and says them. Her **Briefing** tool returns only that line; `glados.briefing` gives automations the facts (`plain: true`) or both. New setting: **Bedtime sensor** (optional).
 
 ### Fixed
+- **GLaDOS's chime-in no longer reads her instructions aloud.** The Announcer's line now goes to her as the fact, the extra instruction stays short, a reply that repeats the instruction is dropped (the Announcer stands alone), and a reply that opens by repeating the Announcer is trimmed.
 - **Every phone alarm gets the room backup.** "On my phone, with a backup" stored no backup when the model chose "phone", and she then said there was one.
 
 ### To do when installing
 - Turn off `automation.glados_reminders`, or reminders are said twice.
+- Set **Bedtime sensor** to `sensor.bedtime_target`.
+- Hide `script.glados_bedtime_briefing` from her (her Briefing tool replaces it) and turn that script into a wrapper around `glados.briefing`, so the bedtime nudge, Bedroom all off and the morning greeting keep working.
 
 ## 0.6.0
 - **Alarms.** A morning alarm goes on the person's phone, with a backup on the room's speaker that rings only when the phone alarm failed: it never showed up on the phone, the phone is off or flat, or it wasn't dismissed within **Alarm backup after** (10 minutes). Other alarms ring on the speaker. Speaker alarms repeat three times and stop once the room looks awake, or on "stop" / "snooze".

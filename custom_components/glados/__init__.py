@@ -37,10 +37,13 @@ from .air import AirWatch
 from .alarms import AlarmClock
 from .reminders import Reminders
 from .announce import AnnounceRequest, Announcer
+from .briefing import async_briefing, async_facts
 from .const import (
     ATTR_ANYWHERE,
     ATTR_AREA,
     ATTR_CO2,
+    ATTR_MORNING,
+    ATTR_PLAIN,
     ATTR_REMINDER,
     ATTR_STYLE,
     ATTR_FACTS,
@@ -59,6 +62,7 @@ from .const import (
     DEFAULTS,
     DOMAIN,
     SERVICE_ANNOUNCE,
+    SERVICE_BRIEFING,
     SERVICE_CLEAN_TEXT,
     SERVICE_RECALL,
     SERVICE_REMEMBER,
@@ -97,6 +101,7 @@ SERVICES = (
     SERVICE_REMEMBER,
     SERVICE_RECALL,
     SERVICE_TEST_ANNOUNCEMENT,
+    SERVICE_BRIEFING,
 )
 
 CLEAN_TEXT_SCHEMA = vol.Schema({vol.Required(ATTR_TEXT): cv.string})
@@ -120,6 +125,13 @@ ANNOUNCE_SCHEMA = vol.Schema(
         ),
         vol.Optional(ATTR_GLADOS_AFTER, default=""): cv.string,
         vol.Optional(ATTR_SATELLITE): cv.entity_id,
+    }
+)
+BRIEFING_SCHEMA = vol.Schema(
+    {
+        vol.Optional(ATTR_MORNING, default=False): cv.boolean,
+        vol.Optional(ATTR_AREA, default=""): cv.string,
+        vol.Optional(ATTR_PLAIN, default=False): cv.boolean,
     }
 )
 TEST_SCHEMA = vol.Schema(
@@ -201,6 +213,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: GladosConfigEntry) -> bo
         )
         return await data().announcer.async_announce(req, call.context)
 
+    async def _briefing(call: ServiceCall) -> ServiceResponse:
+        area = call.data[ATTR_AREA] or None
+        if call.data[ATTR_PLAIN]:
+            return {"facts": await async_facts(hass, data().options, call.data[ATTR_MORNING], area)}
+        return await async_briefing(
+            hass, data().options, call.data[ATTR_MORNING], area, call.context
+        )
+
     async def _test(call: ServiceCall) -> ServiceResponse:
         return await data().announcer.async_test(
             call.data.get(ATTR_SATELLITE),
@@ -248,6 +268,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: GladosConfigEntry) -> bo
     register(DOMAIN, SERVICE_SAY, _say, SAY_SCHEMA, SupportsResponse.ONLY)
     register(DOMAIN, SERVICE_ROOM_CONTEXT, _room_context, ROOM_SCHEMA, SupportsResponse.ONLY)
     register(DOMAIN, SERVICE_ANNOUNCE, _announce, ANNOUNCE_SCHEMA, SupportsResponse.OPTIONAL)
+    register(DOMAIN, SERVICE_BRIEFING, _briefing, BRIEFING_SCHEMA, SupportsResponse.ONLY)
     register(DOMAIN, SERVICE_TEST_ANNOUNCEMENT, _test, TEST_SCHEMA, SupportsResponse.OPTIONAL)
     register(DOMAIN, SERVICE_WHO, _who, WHO_SCHEMA, SupportsResponse.ONLY)
     register(DOMAIN, SERVICE_REMEMBER, _remember, REMEMBER_SCHEMA)
