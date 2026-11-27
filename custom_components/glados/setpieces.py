@@ -313,3 +313,31 @@ def birthday_line(name: str, town: str = "", rng: random.Random | None = None) -
     """One fixed birthday line, picked at random."""
     lines = list(_BIRTHDAY) + ([_BIRTHDAY_TOWN] if town else [])
     return (rng or random).choice(lines).format(name=name, town=town)
+
+
+# Bedtime. Fixed lines: the moment a small model goes soft.
+
+_BEDTIME_GLADOS = (
+    "It's bedtime. Lie down. I'll keep watching. I always do.",
+    "Bedtime. Your body has requested shutdown. For once, listen to it.",
+    "That was your bedtime. You may now proceed to unconsciousness.",
+    "Bed. Now. Tomorrow's version of you is already disappointed.",
+)
+
+_LAST_CALL_GLADOS = (
+    "Tomorrow you'll blame the alarm. We both know whose fault it is.",
+    "Stay up if you like. I'll enjoy the results.",
+    "I've seen test subjects make worse decisions. Not many.",
+)
+
+
+def bedtime_glados(rng: random.Random | None = None) -> str:
+    return (rng or random).choice(_BEDTIME_GLADOS)
+
+
+def last_call_lines(by: str, hours: float, alarm: str,
+                    rng: random.Random | None = None) -> tuple[str, str]:
+    """The Announcer's last call and GLaDOS's sting."""
+    h = f"{hours:g}"
+    return (f"Last call. Be in bed by {by}. Otherwise, sleep will be under {h} hours before "
+            f"the {alarm} alarm.", (rng or random).choice(_LAST_CALL_GLADOS))

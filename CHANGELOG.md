@@ -7,11 +7,13 @@
 - **Leave-time reminders in the integration.** For each person with a `leave_home_<person>` helper, while they are home: a heads-up before (**Leave heads-up**, 15 minutes, with the outside temperature), then "leave now" at the time, by the Announcer in their room, with one GLaDOS remark. New: "leave now" also says what is still on (`glados_left_on`) and which windows and doors are open. Asleep or on Do Not Disturb: their phone. A minute missed during a restart is caught up, up to five minutes late.
 
 - **Mornings in the integration.** Between 20:00 and 05:00, a phone going on a wireless charger notes when someone fell asleep. A morning alarm (a phone's next alarm, or an alarm clock's alarm-ringing sensor) fades on the lights labelled `glados_wakeup` while it's dark, sets a leave time (alarm plus their morning routine) if none is set for today, and once they're out of bed she greets them: the Announcer's "you have been in suspension for 7 hours and 33 minutes", then GLaDOS with the morning briefing. No alarm: the first time a light labelled `glados` goes on in their room. On their birthday: the **Birthday song**, then a fixed birthday line with their first commitment. Once per person per day. Settings: **Morning greeting**, **Birthday song**, **Birthday names** (such as `nico: Sjors`). `glados.greet` tests it, `pretend_birthday` too.
+- **Bedtime per person.** Each person's bedtime is their next morning alarm minus the **Sleep goal** (8 hours); without an alarm, the **Usual bedtime** if set. Last call is the alarm minus the **Minimum sleep** (6 hours). In their own room: an hour before (bedtime plus the one thing that matters for tomorrow, from the briefing), at bedtime, and the Announcer's last call when the lights are still on. Never for someone in bed or in the dark. New sensors per person: **Bedtime <name>** and **Last call <name>**, for dashboards.
 - **The first add-on: [GLaDOS trains](https://github.com/vibribbonee/ha-glados-trains).** Its own repository and HACS install.
 
 ### To do when installing
 - Turn off `automation.glados_time_to_leave`, or it is said twice.
 - Turn off `automation.glados_good_morning` and `automation.glados_notes_when_you_go_to_sleep`; set **Birthday song** to your song and **Birthday names** from `input_text.glados_birthday_names`.
+- In `automation.bedroom_bedtime_nudge`, remove the "GLaDOS says the nudge in the room" step (her bedtime nudges replace it); set **Sleep goal**, **Minimum sleep** and **Usual bedtime** from `input_number.sleep_goal`, `input_number.minimum_sleep` and `input_datetime.target_bedtime`.
 - After installing GLaDOS trains: turn off `automation.glados_train_reminders` and hide `script.set_train_reminder` from her.
 
 ## 0.7.0
@@ -25,6 +27,7 @@ One release instead of many small ones, so the house restarts once.
 - **The bedtime and morning briefing in Python.** Tomorrow at bedtime, or the rest of today in the morning: the calendar, each person's alarm and whether it's early enough (their morning routine before the first commitment, half an hour more when it has a location), leave times and when to be up, phones that won't last the night, the bedtime sensor and the weather. She picks the two or three that matter and says them. Her **Briefing** tool returns only that line; `glados.briefing` gives automations the facts (`plain: true`) or both. New setting: **Bedtime sensor** (optional).
 
 ### Fixed
+- An announcement for someone known to be awake (a bedtime nudge) is no longer silenced by the "before an alarm, people may be asleep" rule.
 - **GLaDOS's chime-in no longer reads her instructions aloud.** The Announcer's line now goes to her as the fact, the extra instruction stays short, a reply that repeats the instruction is dropped (the Announcer stands alone), and a reply that opens by repeating the Announcer is trimmed.
 - **Every phone alarm gets the room backup.** "On my phone, with a backup" stored no backup when the model chose "phone", and she then said there was one.
 

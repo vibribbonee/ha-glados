@@ -43,7 +43,11 @@
           "leave_heads_up_minutes": "Leave heads-up",
           "morning_greeting": "Morning greeting",
           "birthday_song": "Birthday song",
-          "birthday_names": "Birthday names"
+          "birthday_names": "Birthday names",
+          "bedtime_nudges": "Bedtime nudges",
+          "sleep_goal_hours": "Sleep goal",
+          "minimum_sleep_hours": "Minimum sleep",
+          "usual_bedtime": "Usual bedtime"
         },
         "data_description": {
           "chat_agent": "The conversation agent she thinks with, such as an Ollama, OpenAI, Google or Anthropic agent with Assist control on. Not GLaDOS itself.",
@@ -64,7 +68,11 @@
           "leave_heads_up_minutes": "Minutes before a person's leave time that the Announcer gives a heads-up. At the time itself it says leave now, with what is still on and open. 0: only leave now.",
           "morning_greeting": "After a morning alarm, once they are out of bed, or the first time a light goes on in their room: the Announcer's \"in suspension for\" line, then GLaDOS with the morning briefing. Lights labelled glados_wakeup fade on while it is dark. Turn off if an automation already does this.",
           "birthday_song": "Media id played before the birthday greeting, such as media-source://media_source/local/birthday.mp3. Empty: no song.",
-          "birthday_names": "Other names a person's birthday appears under in the calendar, as person: names; such as nico: Sjors, Nico; byte: Bee. Their own name always counts."
+          "birthday_names": "Other names a person's birthday appears under in the calendar, as person: names; such as nico: Sjors, Nico; byte: Bee. Their own name always counts.",
+          "bedtime_nudges": "Per person, in their room: an hour before bedtime, at bedtime, and the Announcer's last call when the lights are still on. Bedtime is their next morning alarm minus the sleep goal. Turn off if an automation already says these.",
+          "sleep_goal_hours": "Hours of sleep before a morning alarm: sets bedtime.",
+          "minimum_sleep_hours": "Hours of sleep below which it is last call.",
+          "usual_bedtime": "Bedtime on nights without a morning alarm. Empty: no nudges then."
         }
       }
     }
@@ -244,7 +252,8 @@
       "test_announcement": {
         "name": "Test announcement"
       }
-    }
+    },
+    "sensor": {}
   },
   "selector": {
     "co2_alerts": {

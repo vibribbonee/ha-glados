@@ -50,17 +50,24 @@ class AnnounceRequest:
     satellite: str | None = None  # speak on this one, whatever room it is in
     glados_line: str = ""  # a fixed GLaDOS line: after the Announcer, or on her own
     wake: bool = False  # an alarm: rings past the sleep and quiet rules
+    awake: bool = False  # the person is known to be up: an alarm later is no reason for quiet
 
 
-def blocked_reason(ctx: RoomContext, ignore_schedule: bool, anywhere: bool) -> str:
-    """Why she must stay quiet in this room, or '' when she may speak."""
+def blocked_reason(
+    ctx: RoomContext, ignore_schedule: bool, anywhere: bool, awake: bool = False
+) -> str:
+    """Why she must stay quiet in this room, or '' when she may speak.
+
+    awake: the person is known to be up (for a bedtime nudge), so an alarm later
+    on is no reason to think they are asleep.
+    """
     if not ignore_schedule and not ctx.may_speak:
         return "outside speaking hours"
     if ctx.in_bed:
         return "someone is in bed"
     if ctx.dark_bedroom:
         return "the bedroom is dark, people may be asleep"
-    if ctx.before_alarm:
+    if ctx.before_alarm and not awake:
         return f"people may be asleep until the {ctx.before_alarm} alarm"
     if ctx.quiet:
         return "do not disturb is on"
@@ -107,7 +114,9 @@ class Announcer:
         if req.wake:
             reason = "" if (req.satellite or ctx.satellite or ctx.any_satellite) else "no voice satellite"
         else:
-            reason = blocked_reason(ctx, req.ignore_schedule, req.anywhere or bool(req.satellite))
+            reason = blocked_reason(
+                ctx, req.ignore_schedule, req.anywhere or bool(req.satellite), req.awake
+            )
         if reason:
             return {"spoken": False, "reason": reason, "speech": "", "after": "", "area": ctx.area}
 

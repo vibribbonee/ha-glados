@@ -37,6 +37,7 @@ from .addon import async_start_addons
 from .air import AirWatch
 from .alarms import AlarmClock
 from .departures import Departures
+from .bedtime import Bedtimes
 from .morning import Mornings
 from .reminders import Reminders
 from .announce import AnnounceRequest, Announcer
@@ -95,7 +96,7 @@ from .setpieces import STYLE_ANNOUNCER, STYLE_GLADOS
 from .speech import clean_for_speech
 from .voice import async_say
 
-PLATFORMS = [Platform.BUTTON, Platform.CONVERSATION]
+PLATFORMS = [Platform.BUTTON, Platform.CONVERSATION, Platform.SENSOR]
 
 SERVICES = (
     SERVICE_CLEAN_TEXT,
@@ -195,6 +196,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: GladosConfigEntry) -> bo
     entry.async_on_unload(Departures(hass, entry.runtime_data).start())
     entry.runtime_data.mornings = Mornings(hass, entry.runtime_data)
     entry.async_on_unload(entry.runtime_data.mornings.start())
+    entry.async_on_unload(Bedtimes(hass, entry.runtime_data).start())
     entry.async_on_unload(async_start_addons(hass, entry.runtime_data))
 
     def data() -> GladosData:

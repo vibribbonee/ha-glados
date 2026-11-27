@@ -53,6 +53,10 @@ CONF_ROUTINE_MINUTES = "routine_minutes"
 CONF_CO2_ALERTS = "co2_alerts"  # announcer, glados or off
 CONF_CO2_REMINDER = "co2_reminder_minutes"  # 0: no reminder
 CONF_BEDTIME_SENSOR = "bedtime_sensor"  # optional timestamp sensor: when to be asleep
+CONF_BEDTIME = "bedtime_nudges"  # per person: an hour before, bedtime, last call
+CONF_SLEEP_GOAL = "sleep_goal_hours"
+CONF_MIN_SLEEP = "minimum_sleep_hours"
+CONF_USUAL_BEDTIME = "usual_bedtime"  # HH:MM, for nights without a morning alarm
 CONF_MORNING = "morning_greeting"  # wake-up greeting, birthday, "in suspension for"
 CONF_BIRTHDAY_SONG = "birthday_song"  # media id, played before the birthday line
 CONF_BIRTHDAY_NAMES = "birthday_names"  # "nico: Sjors, Nico; byte: Bee"
@@ -79,6 +83,10 @@ DEFAULTS: dict[str, str | int | bool] = {
     CONF_BEDTIME_SENSOR: "",
     CONF_LEAVE_HEADS_UP: 15,
     CONF_MORNING: True,
+    CONF_BEDTIME: True,
+    CONF_SLEEP_GOAL: 8,
+    CONF_MIN_SLEEP: 6,
+    CONF_USUAL_BEDTIME: "",
     CONF_BIRTHDAY_SONG: "",
     CONF_BIRTHDAY_NAMES: "",
 }

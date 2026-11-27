@@ -19,6 +19,7 @@ from .const import (
     CONF_ALARM_BACKUP,
     CONF_ANNOUNCER_VOICE,
     CONF_BEEP_IN,
+    CONF_BEDTIME,
     CONF_BEDTIME_SENSOR,
     CONF_BIRTHDAY_NAMES,
     CONF_BIRTHDAY_SONG,
@@ -29,11 +30,14 @@ from .const import (
     CONF_CHAT_AGENT,
     CONF_HOME_TOWN,
     CONF_LEAVE_HEADS_UP,
+    CONF_MIN_SLEEP,
     CONF_MORNING,
     CONF_PERSONALITY,
     CONF_REMINDERS,
     CONF_ROUTINE_MINUTES,
     CONF_SCHEDULE,
+    CONF_SLEEP_GOAL,
+    CONF_USUAL_BEDTIME,
     CONF_VOICE_AGENT,
     DEFAULTS,
     DOMAIN,
@@ -82,6 +86,20 @@ def _options_schema(current: dict[str, Any]) -> vol.Schema:
             vol.Required(CONF_MORNING, default=bool(current[CONF_MORNING])): (
                 selector.BooleanSelector()
             ),
+            vol.Required(CONF_BEDTIME, default=bool(current[CONF_BEDTIME])): (
+                selector.BooleanSelector()
+            ),
+            vol.Required(CONF_SLEEP_GOAL, default=float(current[CONF_SLEEP_GOAL])): (
+                selector.NumberSelector(selector.NumberSelectorConfig(
+                    min=4, max=12, step=0.5, unit_of_measurement="h",
+                    mode=selector.NumberSelectorMode.BOX))
+            ),
+            vol.Required(CONF_MIN_SLEEP, default=float(current[CONF_MIN_SLEEP])): (
+                selector.NumberSelector(selector.NumberSelectorConfig(
+                    min=3, max=10, step=0.5, unit_of_measurement="h",
+                    mode=selector.NumberSelectorMode.BOX))
+            ),
+            opt(CONF_USUAL_BEDTIME): selector.TimeSelector(),
             opt(CONF_BIRTHDAY_SONG): TEXT,
             opt(CONF_BIRTHDAY_NAMES): TEXT,
             vol.Required(CONF_CO2_ALERTS, default=str(current[CONF_CO2_ALERTS])): (
