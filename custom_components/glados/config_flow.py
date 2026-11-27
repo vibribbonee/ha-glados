@@ -1,7 +1,18 @@
-"""Config flow for GLaDOS: pick her brain at setup, tune voices and sounds later."""
+"""Config flow for GLaDOS: pick her brain at setup, the rest under Configure.
+
+The options are grouped into sections, so nobody has to scroll past bedtime
+settings to change a voice:
+
+- brain: the chat agent, her personality, the home town, the voice agent;
+- voices: the Announcer, the beeps, the speaking schedule;
+- warnings: CO2 and windows;
+- days: reminders, alarms, leave times, the morning routine;
+- nights: the morning greeting, birthdays, bedtime.
+"""
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Any
 
 import voluptuous as vol
@@ -13,21 +24,22 @@ from homeassistant.config_entries import (
     OptionsFlow,
 )
 from homeassistant.core import callback
+from homeassistant.data_entry_flow import section
 from homeassistant.helpers import selector
 
 from .const import (
     CONF_ALARM_BACKUP,
     CONF_ANNOUNCER_VOICE,
-    CONF_BEEP_IN,
     CONF_BEDTIME,
     CONF_BEDTIME_SENSOR,
+    CONF_BEEP_IN,
+    CONF_BEEP_OUT,
     CONF_BIRTHDAY_NAMES,
     CONF_BIRTHDAY_SONG,
-    CONF_BEEP_OUT,
+    CONF_CHAT_AGENT,
     CONF_CO2_ALERTS,
     CONF_CO2_REMINDER,
     CONF_COLD_OUTSIDE,
-    CONF_CHAT_AGENT,
     CONF_HOME_TOWN,
     CONF_LEAVE_HEADS_UP,
     CONF_MIN_SLEEP,
@@ -45,123 +57,92 @@ from .const import (
 
 AGENT = selector.EntitySelector(selector.EntitySelectorConfig(domain="conversation"))
 TEXT = selector.TextSelector()
+SWITCH = selector.BooleanSelector()
 
 
-def _suggested(key: str, current: dict[str, Any]) -> dict[str, Any] | None:
+def _number(low: float, high: float, step: float, unit: str) -> selector.NumberSelector:
+    return selector.NumberSelector(selector.NumberSelectorConfig(
+        min=low, max=high, step=step, unit_of_measurement=unit,
+        mode=selector.NumberSelectorMode.BOX))
+
+
+# Each field: (key, required, selector, how to store it).
+Field = tuple[str, bool, Any, Callable[[Any], Any]]
+
+SECTIONS: dict[str, list[Field]] = {
+    "brain": [
+        (CONF_CHAT_AGENT, True, AGENT, str),
+        (CONF_PERSONALITY, True, SWITCH, bool),
+        (CONF_HOME_TOWN, False, TEXT, str),
+        (CONF_VOICE_AGENT, False, AGENT, str),
+    ],
+    "voices": [
+        (CONF_ANNOUNCER_VOICE, False, TEXT, str),
+        (CONF_BEEP_IN, False, TEXT, str),
+        (CONF_BEEP_OUT, False, TEXT, str),
+        (CONF_SCHEDULE, False, selector.EntitySelector(
+            selector.EntitySelectorConfig(domain="schedule")), str),
+    ],
+    "warnings": [
+        (CONF_CO2_ALERTS, True, selector.SelectSelector(selector.SelectSelectorConfig(
+            options=["announcer", "glados", "off"], translation_key=CONF_CO2_ALERTS)), str),
+        (CONF_CO2_REMINDER, True, _number(0, 240, 5, "min"), int),
+        (CONF_COLD_OUTSIDE, True, _number(-20, 25, 1, "°C"), float),
+    ],
+    "days": [
+        (CONF_REMINDERS, True, SWITCH, bool),
+        (CONF_LEAVE_HEADS_UP, True, _number(0, 120, 5, "min"), int),
+        (CONF_ROUTINE_MINUTES, True, _number(5, 180, 5, "min"), int),
+        (CONF_ALARM_BACKUP, True, _number(1, 60, 1, "min"), int),
+    ],
+    "nights": [
+        (CONF_MORNING, True, SWITCH, bool),
+        (CONF_BIRTHDAY_SONG, False, TEXT, str),
+        (CONF_BIRTHDAY_NAMES, False, TEXT, str),
+        (CONF_BEDTIME, True, SWITCH, bool),
+        (CONF_SLEEP_GOAL, True, _number(4, 12, 0.5, "h"), float),
+        (CONF_MIN_SLEEP, True, _number(3, 10, 0.5, "h"), float),
+        (CONF_USUAL_BEDTIME, False, selector.TimeSelector(), str),
+        (CONF_BEDTIME_SENSOR, False, selector.EntitySelector(
+            selector.EntitySelectorConfig(domain="sensor", device_class="timestamp")), str),
+    ],
+}
+_STORE = {key: store for fields in SECTIONS.values() for key, _, _, store in fields}
+
+
+def _marker(key: str, required: bool, current: dict[str, Any]) -> vol.Marker:
     value = current.get(key)
-    return {"suggested_value": value} if value else None
+    if required and isinstance(value, bool | int | float) and value != "":
+        return vol.Required(key, default=value)
+    hint = {"suggested_value": value} if value not in (None, "") else None
+    return (vol.Required if required else vol.Optional)(key, description=hint)
+
+
+def _fields(fields: list[Field], current: dict[str, Any]) -> vol.Schema:
+    return vol.Schema({_marker(k, req, current): sel for k, req, sel, _ in fields})
 
 
 def _setup_schema(current: dict[str, Any]) -> vol.Schema:
-    return vol.Schema(
-        {
-            vol.Required(CONF_CHAT_AGENT, description=_suggested(CONF_CHAT_AGENT, current)): AGENT,
-            vol.Required(CONF_PERSONALITY, default=bool(current[CONF_PERSONALITY])): (
-                selector.BooleanSelector()
-            ),
-            vol.Optional(CONF_HOME_TOWN, description=_suggested(CONF_HOME_TOWN, current)): TEXT,
-        }
-    )
+    return _fields(SECTIONS["brain"][:3], current)
 
 
 def _options_schema(current: dict[str, Any]) -> vol.Schema:
-    def opt(key: str) -> vol.Optional:
-        return vol.Optional(key, description=_suggested(key, current))
-
-    return _setup_schema(current).extend(
-        {
-            opt(CONF_VOICE_AGENT): AGENT,
-            opt(CONF_ANNOUNCER_VOICE): TEXT,
-            opt(CONF_BEEP_IN): TEXT,
-            opt(CONF_BEEP_OUT): TEXT,
-            opt(CONF_SCHEDULE): selector.EntitySelector(
-                selector.EntitySelectorConfig(domain="schedule")
-            ),
-            opt(CONF_BEDTIME_SENSOR): selector.EntitySelector(
-                selector.EntitySelectorConfig(domain="sensor", device_class="timestamp")
-            ),
-            vol.Required(CONF_REMINDERS, default=bool(current[CONF_REMINDERS])): (
-                selector.BooleanSelector()
-            ),
-            vol.Required(CONF_MORNING, default=bool(current[CONF_MORNING])): (
-                selector.BooleanSelector()
-            ),
-            vol.Required(CONF_BEDTIME, default=bool(current[CONF_BEDTIME])): (
-                selector.BooleanSelector()
-            ),
-            vol.Required(CONF_SLEEP_GOAL, default=float(current[CONF_SLEEP_GOAL])): (
-                selector.NumberSelector(selector.NumberSelectorConfig(
-                    min=4, max=12, step=0.5, unit_of_measurement="h",
-                    mode=selector.NumberSelectorMode.BOX))
-            ),
-            vol.Required(CONF_MIN_SLEEP, default=float(current[CONF_MIN_SLEEP])): (
-                selector.NumberSelector(selector.NumberSelectorConfig(
-                    min=3, max=10, step=0.5, unit_of_measurement="h",
-                    mode=selector.NumberSelectorMode.BOX))
-            ),
-            opt(CONF_USUAL_BEDTIME): selector.TimeSelector(),
-            opt(CONF_BIRTHDAY_SONG): TEXT,
-            opt(CONF_BIRTHDAY_NAMES): TEXT,
-            vol.Required(CONF_CO2_ALERTS, default=str(current[CONF_CO2_ALERTS])): (
-                selector.SelectSelector(
-                    selector.SelectSelectorConfig(
-                        options=["announcer", "glados", "off"],
-                        translation_key=CONF_CO2_ALERTS,
-                    )
-                )
-            ),
-            vol.Required(CONF_CO2_REMINDER, default=int(current[CONF_CO2_REMINDER])): (
-                selector.NumberSelector(
-                    selector.NumberSelectorConfig(
-                        min=0, max=240, step=5, unit_of_measurement="min",
-                        mode=selector.NumberSelectorMode.BOX,
-                    )
-                )
-            ),
-            vol.Required(CONF_COLD_OUTSIDE, default=float(current[CONF_COLD_OUTSIDE])): (
-                selector.NumberSelector(
-                    selector.NumberSelectorConfig(
-                        min=-20, max=25, step=1, unit_of_measurement="°C",
-                        mode=selector.NumberSelectorMode.BOX,
-                    )
-                )
-            ),
-            vol.Required(CONF_LEAVE_HEADS_UP, default=int(current[CONF_LEAVE_HEADS_UP])): (
-                selector.NumberSelector(
-                    selector.NumberSelectorConfig(
-                        min=0, max=120, step=5, unit_of_measurement="min",
-                        mode=selector.NumberSelectorMode.BOX,
-                    )
-                )
-            ),
-            vol.Required(CONF_ALARM_BACKUP, default=int(current[CONF_ALARM_BACKUP])): (
-                selector.NumberSelector(
-                    selector.NumberSelectorConfig(
-                        min=1, max=60, step=1, unit_of_measurement="min",
-                        mode=selector.NumberSelectorMode.BOX,
-                    )
-                )
-            ),
-            vol.Required(CONF_ROUTINE_MINUTES, default=int(current[CONF_ROUTINE_MINUTES])): (
-                selector.NumberSelector(
-                    selector.NumberSelectorConfig(
-                        min=5, max=180, step=5, unit_of_measurement="min",
-                        mode=selector.NumberSelectorMode.BOX,
-                    )
-                )
-            ),
-        }
-    )
+    return vol.Schema({
+        vol.Required(name): section(_fields(fields, current), {"collapsed": name != "brain"})
+        for name, fields in SECTIONS.items()
+    })
 
 
 def clean_options(user_input: dict[str, Any]) -> dict[str, Any]:
-    """Every option stored; a text field the form left out was cleared."""
+    """Every option stored flat; a text field the form left out was cleared."""
+    flat: dict[str, Any] = {}
+    for key, value in user_input.items():
+        flat.update(value if key in SECTIONS and isinstance(value, dict) else {key: value})
     data = dict(DEFAULTS)
-    data.update(user_input)
-    data[CONF_ROUTINE_MINUTES] = int(data[CONF_ROUTINE_MINUTES])
-    data[CONF_CO2_REMINDER] = int(data[CONF_CO2_REMINDER])
-    data[CONF_ALARM_BACKUP] = int(data[CONF_ALARM_BACKUP])
-    data[CONF_LEAVE_HEADS_UP] = int(data[CONF_LEAVE_HEADS_UP])
+    data.update(flat)
+    for key, store in _STORE.items():
+        if data.get(key) is not None:
+            data[key] = store(data[key])
     return data
 
 
@@ -183,17 +164,17 @@ class GladosConfigFlow(ConfigFlow, domain=DOMAIN):
     @staticmethod
     @callback
     def async_get_options_flow(config_entry: ConfigEntry) -> OptionsFlow:
-        """Agents, voices, sounds, schedule."""
+        """Everything else, in sections."""
         return GladosOptionsFlow()
 
 
 class GladosOptionsFlow(OptionsFlow):
-    """Change her agents, voices, sounds and speaking schedule."""
+    """Her settings, grouped."""
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """One form with every option."""
+        """One form, five sections."""
         if user_input is not None:
             return self.async_create_entry(data=clean_options(user_input))
         current = {**DEFAULTS, **self.config_entry.options}

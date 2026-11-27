@@ -22,10 +22,43 @@ async def async_setup_entry(
 ) -> None:
     """A bedtime and a last-call sensor for every person."""
     async_add_entities(
-        BedtimeSensor(entry, person, kind)
-        for person in all_people(hass)
-        for kind in ("bedtime", "last_call")
+        [LastAnnouncementSensor(entry)]
+        + [BedtimeSensor(entry, person, kind)
+           for person in all_people(hass) for kind in ("bedtime", "last_call")]
     )
+
+
+class LastAnnouncementSensor(SensorEntity):
+    """What she last said unprompted, or why she stayed quiet."""
+
+    _attr_has_entity_name = True
+    _attr_translation_key = "last_announcement"
+    _attr_icon = "mdi:bullhorn-outline"
+    _attr_should_poll = False
+
+    def __init__(self, entry: ConfigEntry) -> None:
+        self._entry = entry
+        self._attr_unique_id = f"{entry.entry_id}_last_announcement"
+        self._attr_device_info = {"identifiers": {(DOMAIN, entry.entry_id)}}
+
+    async def async_added_to_hass(self) -> None:
+        listeners = self._entry.runtime_data.announcer.listeners
+        listeners.append(self._changed)
+        self.async_on_remove(lambda: listeners.remove(self._changed))
+        self._changed()
+
+    @callback
+    def _changed(self) -> None:
+        history = list(self._entry.runtime_data.announcer.history)
+        last = history[0] if history else None
+        if last is None:
+            self._attr_native_value = None
+        elif last["spoken"]:
+            self._attr_native_value = (last["speech"] or "")[:250]
+        else:
+            self._attr_native_value = f"Quiet: {last['reason']}"[:250]
+        self._attr_extra_state_attributes = {**(last or {}), "history": history}
+        self.async_write_ha_state()
 
 
 class BedtimeSensor(SensorEntity):

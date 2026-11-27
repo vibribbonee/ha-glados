@@ -55,22 +55,29 @@ async def test_options_flow(home: Home) -> None:
     hass = home.hass
     entry = await _setup(hass)
     flow = await hass.config_entries.options.async_init(entry.entry_id)
+    # The form comes in sections; only Brain is open.
+    sections = [k.schema for k in flow["data_schema"].schema]
+    assert sections == ["brain", "voices", "warnings", "days", "nights"]
     result = await hass.config_entries.options.async_configure(
         flow["flow_id"],
         {
-            "chat_agent": "conversation.chat",
-            "personality": False,
-            "voice_agent": "conversation.glados_voice",
-            "announcer_voice": "tts.piper_2:announcer",
-            "beep_in": "",
-            "beep_out": "",
-            "speaking_schedule": "schedule.glados_may_speak_up",
-            "routine_minutes": 40,
+            "brain": {"chat_agent": "conversation.chat", "personality": False,
+                      "voice_agent": "conversation.glados_voice"},
+            "voices": {"announcer_voice": "tts.piper_2:announcer",
+                       "speaking_schedule": "schedule.glados_may_speak_up"},
+            "warnings": {"co2_alerts": "announcer", "co2_reminder_minutes": 30,
+                         "cold_outside_below": 8},
+            "days": {"reminders": True, "leave_heads_up_minutes": 15, "routine_minutes": 40,
+                     "alarm_backup_minutes": 10},
+            "nights": {"morning_greeting": True, "bedtime_nudges": False,
+                       "sleep_goal_hours": 8, "minimum_sleep_hours": 6},
         },
     )
     assert result["type"] == "create_entry"
     await hass.async_block_till_done()
-    assert entry.runtime_data.options["routine_minutes"] == 40
+    options = entry.runtime_data.options
+    assert options["routine_minutes"] == 40 and options["co2_alerts"] == "announcer"
+    assert options["bedtime_nudges"] is False and options["beep_in"] == ""  # stored flat
 
 
 async def test_user_flow(hass: HomeAssistant) -> None:

@@ -24,56 +24,95 @@
     "step": {
       "init": {
         "title": "GLaDOS",
-        "data": {
-          "chat_agent": "Chat agent",
-          "personality": "Add her personality",
-          "home_town": "Home town",
-          "voice_agent": "Voice agent",
-          "announcer_voice": "Announcer voice",
-          "beep_in": "Opening beep",
-          "beep_out": "Closing beep",
-          "speaking_schedule": "Speaking schedule",
-          "routine_minutes": "Default morning routine",
-          "co2_alerts": "Air and window warnings",
-          "co2_reminder_minutes": "CO2 reminder",
-          "cold_outside_below": "Cold outside below",
-          "alarm_backup_minutes": "Alarm backup after",
-          "reminders": "Read out reminders",
-          "bedtime_sensor": "Bedtime sensor",
-          "leave_heads_up_minutes": "Leave heads-up",
-          "morning_greeting": "Morning greeting",
-          "birthday_song": "Birthday song",
-          "birthday_names": "Birthday names",
-          "bedtime_nudges": "Bedtime nudges",
-          "sleep_goal_hours": "Sleep goal",
-          "minimum_sleep_hours": "Minimum sleep",
-          "usual_bedtime": "Usual bedtime"
+        "sections": {
+          "brain": {
+            "name": "Brain",
+            "description": "The agent she thinks with, her personality and the agent that rewrites announcements.",
+            "data": {
+              "chat_agent": "Chat agent",
+              "personality": "Add her personality",
+              "home_town": "Home town",
+              "voice_agent": "Voice agent"
+            },
+            "data_description": {
+              "chat_agent": "The conversation agent she thinks with, such as an Ollama, OpenAI, Google or Anthropic agent with Assist control on. Not GLaDOS itself.",
+              "personality": "Sends her GLaDOS persona along with every request. Turn it off only if the chat agent's own prompt already makes it GLaDOS.",
+              "home_town": "Where the house is, for her remarks and local searches. Optional.",
+              "voice_agent": "A separate agent that rewrites announcements in her voice. Empty: the chat agent does it."
+            }
+          },
+          "voices": {
+            "name": "Voices and sounds",
+            "description": "The facility Announcer's voice, the beeps, and when she may speak up unprompted.",
+            "data": {
+              "announcer_voice": "Announcer voice",
+              "beep_in": "Opening beep",
+              "beep_out": "Closing beep",
+              "speaking_schedule": "Speaking schedule"
+            },
+            "data_description": {
+              "announcer_voice": "The facility Announcer's text-to-speech voice, as engine:voice, such as tts.piper:announcer. Empty: her own voice reads the notices.",
+              "beep_in": "Media id played before she speaks, such as media-source://media_source/local/beep-in.mp3. Empty: no beep.",
+              "beep_out": "Media id played after she speaks. Empty: no beep.",
+              "speaking_schedule": "She only speaks up unprompted while this schedule is on. Empty: any time, still never while someone sleeps."
+            }
+          },
+          "warnings": {
+            "name": "Air and window warnings",
+            "description": "CO2 in every room with a sensor, and windows left open in the cold.",
+            "data": {
+              "co2_alerts": "Air and window warnings",
+              "co2_reminder_minutes": "CO2 reminder",
+              "cold_outside_below": "Cold outside below"
+            },
+            "data_description": {
+              "co2_alerts": "Warn in the room when the air goes stale (1000 ppm) or critical (1500 ppm), and when a window stays open in the cold. Announcer: the facility Announcer warns and GLaDOS replies. GLaDOS: she warns on her own.",
+              "co2_reminder_minutes": "Remind again after this many minutes while the air stays bad. 0: no reminder.",
+              "cold_outside_below": "Below this outside temperature, a window open for 20 minutes gets a reminder, once per opening; in an empty room, she tells whoever is home."
+            }
+          },
+          "days": {
+            "name": "Reminders, alarms and leaving",
+            "description": "Reminders read out, the heads-up before leaving, and the backup for phone alarms.",
+            "data": {
+              "reminders": "Read out reminders",
+              "leave_heads_up_minutes": "Leave heads-up",
+              "routine_minutes": "Default morning routine",
+              "alarm_backup_minutes": "Alarm backup after"
+            },
+            "data_description": {
+              "reminders": "To-dos with a due time on each person's own list and the shared To-do list, said in their room when due, or sent to their phone. What comes due while they sleep goes to the phone and is also said after they wake. Turn off if an automation already does this.",
+              "leave_heads_up_minutes": "Minutes before a person's leave time that the Announcer gives a heads-up. At the time itself it says leave now, with what is still on and open. 0: only leave now.",
+              "routine_minutes": "Minutes from alarm to the door, for people without their own Morning routine helper.",
+              "alarm_backup_minutes": "A morning alarm on a phone that has not been dismissed by then, or a phone that is off or never showed the alarm, rings on the room's speaker."
+            }
+          },
+          "nights": {
+            "name": "Mornings and bedtime",
+            "description": "The morning greeting and birthdays, and each person's bedtime.",
+            "data": {
+              "morning_greeting": "Morning greeting",
+              "birthday_song": "Birthday song",
+              "birthday_names": "Birthday names",
+              "bedtime_nudges": "Bedtime nudges",
+              "sleep_goal_hours": "Sleep goal",
+              "minimum_sleep_hours": "Minimum sleep",
+              "usual_bedtime": "Usual bedtime",
+              "bedtime_sensor": "Bedtime sensor"
+            },
+            "data_description": {
+              "morning_greeting": "After a morning alarm, once they are out of bed, or the first time a light goes on in their room: the Announcer's \"in suspension for\" line, then GLaDOS with the morning briefing. Lights labelled glados_wakeup fade on while it is dark. Turn off if an automation already does this.",
+              "birthday_song": "Media id played before the birthday greeting, such as media-source://media_source/local/birthday.mp3. Empty: no song.",
+              "birthday_names": "Other names a person's birthday appears under in the calendar, as person: names; such as nico: Sjors, Nico; byte: Bee. Their own name always counts.",
+              "bedtime_nudges": "Per person, in their room: an hour before bedtime, at bedtime, and the Announcer's last call when the lights are still on. Bedtime is their next morning alarm minus the sleep goal. Turn off if an automation already says these.",
+              "sleep_goal_hours": "Hours of sleep before a morning alarm: sets bedtime.",
+              "minimum_sleep_hours": "Hours of sleep below which it is last call.",
+              "usual_bedtime": "Bedtime on nights without a morning alarm. Empty: no nudges then.",
+              "bedtime_sensor": "Optional: a timestamp sensor with the time to be asleep, mentioned in the bedtime briefing."
+            }
+          }
         },
-        "data_description": {
-          "chat_agent": "The conversation agent she thinks with, such as an Ollama, OpenAI, Google or Anthropic agent with Assist control on. Not GLaDOS itself.",
-          "personality": "Sends her GLaDOS persona along with every request. Turn it off only if the chat agent's own prompt already makes it GLaDOS.",
-          "home_town": "Where the house is, for her remarks and local searches. Optional.",
-          "voice_agent": "A separate agent that rewrites announcements in her voice. Empty: the chat agent does it.",
-          "announcer_voice": "The facility Announcer's text-to-speech voice, as engine:voice, such as tts.piper:announcer. Empty: her own voice reads the notices.",
-          "beep_in": "Media id played before she speaks, such as media-source://media_source/local/beep-in.mp3. Empty: no beep.",
-          "beep_out": "Media id played after she speaks. Empty: no beep.",
-          "speaking_schedule": "She only speaks up unprompted while this schedule is on. Empty: any time, still never while someone sleeps.",
-          "routine_minutes": "Minutes from alarm to the door, for people without their own Morning routine helper.",
-          "co2_alerts": "Warn in the room when the air goes stale (1000 ppm) or critical (1500 ppm), and when a window stays open in the cold. Announcer: the facility Announcer warns and GLaDOS replies. GLaDOS: she warns on her own.",
-          "co2_reminder_minutes": "Remind again after this many minutes while the air stays bad. 0: no reminder.",
-          "cold_outside_below": "Below this outside temperature, a window open for 20 minutes gets a reminder, once per opening; in an empty room, she tells whoever is home.",
-          "alarm_backup_minutes": "A morning alarm on a phone that has not been dismissed by then, or a phone that is off or never showed the alarm, rings on the room's speaker.",
-          "reminders": "To-dos with a due time on each person's own list and the shared To-do list, said in their room when due, or sent to their phone. What comes due while they sleep goes to the phone and is also said after they wake. Turn off if an automation already does this.",
-          "bedtime_sensor": "Optional: a timestamp sensor with the time to be asleep, mentioned in the bedtime briefing.",
-          "leave_heads_up_minutes": "Minutes before a person's leave time that the Announcer gives a heads-up. At the time itself it says leave now, with what is still on and open. 0: only leave now.",
-          "morning_greeting": "After a morning alarm, once they are out of bed, or the first time a light goes on in their room: the Announcer's \"in suspension for\" line, then GLaDOS with the morning briefing. Lights labelled glados_wakeup fade on while it is dark. Turn off if an automation already does this.",
-          "birthday_song": "Media id played before the birthday greeting, such as media-source://media_source/local/birthday.mp3. Empty: no song.",
-          "birthday_names": "Other names a person's birthday appears under in the calendar, as person: names; such as nico: Sjors, Nico; byte: Bee. Their own name always counts.",
-          "bedtime_nudges": "Per person, in their room: an hour before bedtime, at bedtime, and the Announcer's last call when the lights are still on. Bedtime is their next morning alarm minus the sleep goal. Turn off if an automation already says these.",
-          "sleep_goal_hours": "Hours of sleep before a morning alarm: sets bedtime.",
-          "minimum_sleep_hours": "Hours of sleep below which it is last call.",
-          "usual_bedtime": "Bedtime on nights without a morning alarm. Empty: no nudges then."
-        }
+        "description": "Everything she does, grouped. Only Brain is open by default."
       }
     }
   },
@@ -253,7 +292,11 @@
         "name": "Test announcement"
       }
     },
-    "sensor": {}
+    "sensor": {
+      "last_announcement": {
+        "name": "Last announcement"
+      }
+    }
   },
   "selector": {
     "co2_alerts": {

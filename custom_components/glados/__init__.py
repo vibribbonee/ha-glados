@@ -37,6 +37,7 @@ from .addon import async_start_addons
 from .air import AirWatch
 from .alarms import AlarmClock
 from .departures import Departures
+from .heartbeat import Heartbeat
 from .bedtime import Bedtimes
 from .morning import Mornings
 from .reminders import Reminders
@@ -172,6 +173,7 @@ class GladosData:
     options: dict[str, Any]
     alarms: AlarmClock | None = None
     mornings: Mornings | None = None
+    heartbeat: Heartbeat | None = None
 
 
 type GladosConfigEntry = ConfigEntry[GladosData]
@@ -189,14 +191,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: GladosConfigEntry) -> bo
     entry.runtime_data = GladosData(memory, Announcer(hass, options), options)
     entry.async_on_unload(entry.add_update_listener(_async_reload))
     entry.async_on_unload(llm.async_register_api(hass, GladosAPI(hass, entry.runtime_data)))
-    entry.async_on_unload(AirWatch(hass, entry.runtime_data).start())
-    entry.runtime_data.alarms = AlarmClock(hass, entry.runtime_data)
-    entry.async_on_unload(entry.runtime_data.alarms.start())
-    entry.async_on_unload(Reminders(hass, entry.runtime_data).start())
-    entry.async_on_unload(Departures(hass, entry.runtime_data).start())
-    entry.runtime_data.mornings = Mornings(hass, entry.runtime_data)
-    entry.async_on_unload(entry.runtime_data.mornings.start())
-    entry.async_on_unload(Bedtimes(hass, entry.runtime_data).start())
+    run = entry.runtime_data
+    run.alarms = AlarmClock(hass, run)
+    run.mornings = Mornings(hass, run)
+    heart = run.heartbeat = Heartbeat(hass)
+    heart.add("alarms", run.alarms.async_tick)  # first: an alarm must never wait
+    heart.add("reminders", Reminders(hass, run).async_tick)
+    heart.add("leave times", Departures(hass, run).async_tick)
+    heart.add("mornings", run.mornings.async_tick)
+    heart.add("bedtime", Bedtimes(hass, run).async_tick)
+    air = AirWatch(hass, run)
+    heart.add("air and windows", air.async_tick)
+    entry.async_on_unload(heart.start())
     entry.async_on_unload(async_start_addons(hass, entry.runtime_data))
 
     def data() -> GladosData:

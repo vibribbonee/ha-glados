@@ -26,6 +26,12 @@ One release instead of many small ones, so the house restarts once.
 - **A reminder missed during a restart is still said**, up to an hour late. The old automation only caught the exact minute.
 - **The bedtime and morning briefing in Python.** Tomorrow at bedtime, or the rest of today in the morning: the calendar, each person's alarm and whether it's early enough (their morning routine before the first commitment, half an hour more when it has a location), leave times and when to be up, phones that won't last the night, the bedtime sensor and the weather. She picks the two or three that matter and says them. Her **Briefing** tool returns only that line; `glados.briefing` gives automations the facts (`plain: true`) or both. New setting: **Bedtime sensor** (optional).
 
+### Better to live with
+- **Settings in sections.** Configure now has five collapsible groups (Brain; Voices and sounds; Air and window warnings; Reminders, alarms and leaving; Mornings and bedtime) instead of one long form. Only Brain is open.
+- **Last announcement sensor.** What she last said unprompted, or "Quiet: someone is in bed" and the like, with the last ten in its attributes. When she stays quiet, you can see why.
+- **Diagnostics.** Download them from the integration page: settings, add-ons, recent announcements, alarms, held reminders and any feature errors.
+- **One heartbeat.** Her background features run in turn on one timer; one that fails is logged once and the others carry on. A slow beat (a busy voice agent) is never piled up.
+
 ### Fixed
 - An announcement for someone known to be awake (a bedtime nudge) is no longer silenced by the "before an alarm, people may be asleep" rule.
 - **GLaDOS's chime-in no longer reads her instructions aloud.** The Announcer's line now goes to her as the fact, the extra instruction stays short, a reply that repeats the instruction is dropped (the Announcer stands alone), and a reply that opens by repeating the Announcer is trimmed.

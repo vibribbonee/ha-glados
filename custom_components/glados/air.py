@@ -94,7 +94,7 @@ class AirWatch:
     @callback
     def start(self) -> CALLBACK_TYPE:
         """Start checking; returns the stop callback."""
-        return async_track_time_interval(self.hass, self._async_check, CHECK_EVERY)
+        return async_track_time_interval(self.hass, self.async_tick, CHECK_EVERY)
 
     @property
     def style(self) -> str:
@@ -104,7 +104,7 @@ class AirWatch:
     def cold_below(self) -> float:
         return float(self.data.options.get(CONF_COLD_OUTSIDE, DEFAULTS[CONF_COLD_OUTSIDE]))
 
-    async def _async_check(self, now: datetime | None = None) -> None:
+    async def async_tick(self, now: datetime | None = None) -> None:
         if self.style == STYLE_OFF:
             return
         options = self.data.options

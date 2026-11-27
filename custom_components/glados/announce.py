@@ -14,11 +14,14 @@ A port of the glados_announce script, with the same rules and the same result
 
 from __future__ import annotations
 
+from collections import deque
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 from urllib.parse import quote
 
 from homeassistant.core import Context, HomeAssistant
+from homeassistant.util import dt as dt_util
 
 from .const import (
     CONF_ANNOUNCER_VOICE,
@@ -34,6 +37,9 @@ from .rooms import RoomContext, describe
 from .setpieces import CO2_CRITICAL, STYLE_ANNOUNCER
 from .speech import clean_for_speech
 from .voice import async_say, drop_repeat
+
+
+HISTORY = 10
 
 
 @dataclass
@@ -96,6 +102,19 @@ class Announcer:
     def __init__(self, hass: HomeAssistant, options: dict[str, Any]) -> None:
         self.hass = hass
         self.options = {**DEFAULTS, **options}
+        # What she said, or why she stayed quiet: newest first, for the sensor.
+        self.history: deque[dict[str, Any]] = deque(maxlen=HISTORY)
+        self.listeners: list[Callable[[], None]] = []
+
+    def _record(self, req: AnnounceRequest, result: dict[str, Any]) -> dict[str, Any]:
+        self.history.appendleft({
+            "at": dt_util.now().isoformat(), "voice": req.voice, "area": result.get("area"),
+            "spoken": result.get("spoken"), "reason": result.get("reason", ""),
+            "speech": result.get("speech", ""), "after": result.get("after", ""),
+        })
+        for listener in list(self.listeners):
+            listener()
+        return result
 
     async def _play(self, satellite: str, **data: Any) -> None:
         await self.hass.services.async_call(
@@ -108,7 +127,12 @@ class Announcer:
     async def async_announce(
         self, req: AnnounceRequest, context: Context | None = None
     ) -> dict[str, Any]:
-        """Announce, or explain why not."""
+        """Announce, or explain why not. Every outcome is kept in the history."""
+        return self._record(req, await self._announce(req, context))
+
+    async def _announce(
+        self, req: AnnounceRequest, context: Context | None = None
+    ) -> dict[str, Any]:
         area = req.area or (area_of(self.hass, req.satellite) if req.satellite else None)
         ctx = describe(self.hass, area, str(self.options[CONF_SCHEDULE] or "") or None)
         if req.wake:
