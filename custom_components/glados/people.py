@@ -17,6 +17,8 @@ import re
 
 from homeassistant.const import STATE_HOME, STATE_NOT_HOME
 from homeassistant.core import HomeAssistant, State
+from homeassistant.helpers import device_registry as dr
+from homeassistant.util import slugify
 from homeassistant.util import dt as dt_util
 
 from .const import (
@@ -121,6 +123,25 @@ def phones(hass: HomeAssistant, person: Person) -> list[str]:
             if not _NOT_A_PHONE.search(e)
         }
     )
+
+
+def android_phones(hass: HomeAssistant, person: Person) -> list[str]:
+    """notify actions (mobile_app_<device>) of a person's Android phones.
+
+    These take companion-app commands, such as opening the alarm clock app.
+    """
+    reg = dr.async_get(hass)
+    found: list[str] = []
+    for device_id in tracker_devices(hass, person):
+        device = reg.async_get(device_id)
+        if device is None or not any(d == "mobile_app" for d, _ in device.identifiers):
+            continue
+        if (device.manufacturer or "").lower() == "apple" or _NOT_A_PHONE.search(device.name or ""):
+            continue
+        service = f"mobile_app_{slugify(device.name or '')}"
+        if hass.services.has_service("notify", service) and service not in found:
+            found.append(service)
+    return found
 
 
 def next_alarms(hass: HomeAssistant, person: Person) -> list[tuple[str, datetime]]:

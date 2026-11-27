@@ -18,6 +18,7 @@ leave helpers keep working.
 from __future__ import annotations
 
 from datetime import datetime, time, timedelta
+import re
 from typing import TYPE_CHECKING, Any, override
 
 import probatio as p
@@ -29,18 +30,22 @@ from homeassistant.helpers import device_registry as dr, llm
 from homeassistant.util import dt as dt_util
 
 from .audio import audible_player, find_player
-from .const import CONF_ROUTINE_MINUTES, DOMAIN, LABEL_GLADOS
+from .announce import blocked_reason
+from .const import CONF_ROUTINE_MINUTES, DOMAIN, LABEL_GLADOS, LABEL_LEFT_ON
 from .dates import days_away, parse_time, resolve_date, resolve_moment, spoken_date
 from .people import (
     Person,
     all_people,
+    android_phones,
     has_leave_helper,
     leave_helper,
     own_list,
     resolve_person,
     routine_minutes,
 )
-from .registry import label_entities
+from .registry import area_name, area_of, label_entities
+from .rooms import describe
+from .speech import clean_for_speech
 
 if TYPE_CHECKING:
     from . import GladosData
@@ -431,7 +436,143 @@ class SetVolume(GladosTool):
         return llm.ToolResult(data=result)
 
 
-TOOLS = (SetReminder, SetLeaveTime, AddToCalendar, UpcomingEvents, NoteInFile, SetVolume)
+class SetAlarm(GladosTool):
+    name = "set_alarm"
+    title = "Set alarm"
+    description = (
+        "'Wake me at 7:30' or 'set an alarm for tomorrow at 6': sets a real alarm on "
+        "that person's own phone, within the next 24 hours. person: empty for the "
+        "person speaking. For anything later, or not to wake up, use set_reminder. Say "
+        "the time and day as returned."
+    )
+    parameters = p.Schema(
+        {
+            p.Required("time", description="Alarm time, such as 07:30."): str,
+            p.Optional("day", description="today or tomorrow. Empty: the next time it comes."): str,
+            p.Optional("person", description=_PERSON): str,
+            p.Optional("label", description="Short alarm label, such as Dentist."): str,
+        }
+    )
+
+    async def run(self, hass, args, llm_context):
+        t = parse_time(args["time"])
+        if t is None:
+            return _error("Ask for the time, such as seven thirty.")
+        now = dt_util.now()
+        at = resolve_moment(args.get("day"), t, now)
+        if at - now > timedelta(hours=24):
+            return _error("A phone alarm can only be set for the next 24 hours. Use set_reminder.")
+        wanted = args.get("person", "")
+        person = resolve_person(hass, wanted, _user_id(llm_context))
+        if person is None:
+            return _error(f"No person called {wanted}." if wanted else "Ask whose alarm it is.")
+        services = android_phones(hass, person)
+        if not services:
+            return _error(f"{person.name} has no Android phone with the Home Assistant app.")
+        extras = (
+            f"android.intent.extra.alarm.HOUR:{at.hour},"
+            f"android.intent.extra.alarm.MINUTES:{at.minute},"
+            "android.intent.extra.alarm.SKIP_UI:true,"
+            f"android.intent.extra.alarm.MESSAGE:{re.sub(r'[,:]', ' ', args.get('label') or 'GLaDOS')}"
+        )
+        await hass.services.async_call(
+            "notify",
+            services[0],
+            {
+                "message": "command_activity",
+                "data": {"intent_action": "android.intent.action.SET_ALARM", "intent_extras": extras},
+            },
+            blocking=True,
+            context=llm_context.context,
+        )
+        return llm.ToolResult(
+            data={"alarm": _hm(at), "day": days_away(at, now), "date": spoken_date(at),
+                  "person": person.name, "phone": services[0].removeprefix("mobile_app_")}
+        )
+
+
+class Broadcast(GladosTool):
+    name = "broadcast"
+    title = "Broadcast"
+    description = (
+        "'Tell everyone dinner is ready' or 'announce that I'm leaving': says a message "
+        "on the voice satellites in every other room, except where someone is asleep, "
+        "on Do Not Disturb or watching a video. Write the message as you would say it, "
+        "one or two short sentences. Report the rooms it returns."
+    )
+    parameters = p.Schema(
+        {p.Required("message", description="What to say, in your voice."): str}
+    )
+
+    async def run(self, hass, args, llm_context):
+        message = clean_for_speech(args["message"])
+        here = None
+        if llm_context.device_id:
+            device = dr.async_get(hass).async_get(llm_context.device_id)
+            here = device.area_id if device else None
+        sent: list[str] = []
+        skipped: dict[str, str] = {}
+        seen: set[str] = set()
+        for state in hass.states.async_all("assist_satellite"):
+            area = area_of(hass, state.entity_id)
+            if state.state == "unavailable" or not area or area == here or area in seen:
+                continue
+            seen.add(area)
+            ctx = describe(hass, area, None)
+            room = area_name(hass, area)
+            if reason := blocked_reason(ctx, ignore_schedule=True, anywhere=False):
+                skipped[room] = reason
+                continue
+            await hass.services.async_call(
+                "assist_satellite",
+                "announce",
+                {"entity_id": ctx.satellite or state.entity_id, "message": message},
+                blocking=True,
+                context=llm_context.context,
+            )
+            sent.append(room)
+        if not sent:
+            return _error("Nobody else could hear it: " + (
+                ", ".join(f"{r}: {why}" for r, why in skipped.items()) or "no other room has a speaker"
+            ))
+        return llm.ToolResult(data={"said_in": sent, "skipped": skipped, "message": message})
+
+
+class LeavingCheck(GladosTool):
+    name = "leaving_check"
+    title = "Leaving check"
+    description = (
+        "When someone says they are leaving, going out, going to bed, or asks if "
+        "everything is off: what is still on that should not be, and which windows are "
+        "open. Mention each item by name; turn things off only when they ask."
+    )
+    annotations = _READS
+    parameters = p.Schema({})
+
+    async def run(self, hass, args, llm_context):
+        left_on = sorted(
+            hass.states.get(e).name
+            for e in label_entities(hass, LABEL_LEFT_ON)
+            if hass.states.get(e) is not None
+            and hass.states.get(e).state in ("on", "heat", "cool", "heat_cool", "auto", "dry", "fan_only", "playing")
+        )
+        windows = sorted(
+            s.name
+            for s in hass.states.async_all("binary_sensor")
+            if s.attributes.get("device_class") in ("window", "door", "garage_door", "opening")
+            and s.state == "on"
+        )
+        return llm.ToolResult(
+            data={
+                "still_on": left_on or "nothing",
+                "open": windows or "nothing",
+                "all_clear": not left_on and not windows,
+            }
+        )
+
+
+TOOLS = (SetReminder, SetLeaveTime, AddToCalendar, UpcomingEvents, NoteInFile, SetVolume,
+         SetAlarm, Broadcast, LeavingCheck)
 
 
 class GladosAPI(llm.API):

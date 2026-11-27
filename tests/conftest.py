@@ -60,7 +60,8 @@ async def home(hass: HomeAssistant, freezer) -> Home:
     bedroom = areas.async_create("Bedroom").id
     office = areas.async_create("Office").id
     labels = lr.async_get(hass)
-    for name in ("glados", "glados_quiet", "glados_heating", "glados_cooling", "glados_own_chime"):
+    for name in ("glados", "glados_quiet", "glados_heating", "glados_cooling", "glados_own_chime",
+                 "glados_left_on"):
         labels.async_create(name)
 
     source = MockConfigEntry(domain="test")

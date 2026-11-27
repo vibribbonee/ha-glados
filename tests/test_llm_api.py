@@ -143,3 +143,47 @@ async def test_volume_follows_the_sound(home: Home) -> None:
     await _call(api, "set_volume", device="tv", level=35)
     assert calls[-1].data == {"entity_id": "media_player.tv", "volume_level": 0.35}
     assert (await _call(api, "set_volume", device="radio")).error
+
+
+async def test_set_alarm_on_their_phone(home: Home) -> None:
+    from homeassistant.helpers import device_registry as dr, entity_registry as er
+    phone = er.async_get(home.hass).async_get("device_tracker.pixel_9a").device_id
+    devices = dr.async_get(home.hass)
+    devices.async_update_device(
+        phone, new_identifiers=devices.async_get(phone).identifiers | {("mobile_app", "pixel")},
+        name="Pixel 9a",
+    )
+    api = await _api(home.hass)
+    calls = async_mock_service(home.hass, "notify", "mobile_app_pixel_9a")
+    result = await _call(api, "set_alarm", time="7:30", label="Dentist")
+    assert result.data == {"alarm": "07:30", "day": "tomorrow", "date": "Saturday 28 November",
+                           "person": "nico", "phone": "pixel_9a"}
+    sent = calls[0].data
+    assert sent["message"] == "command_activity"
+    assert sent["data"]["intent_action"] == "android.intent.action.SET_ALARM"
+    assert "HOUR:7," in sent["data"]["intent_extras"] and "MINUTES:30" in sent["data"]["intent_extras"]
+    assert "MESSAGE:Dentist" in sent["data"]["intent_extras"]
+    # Not more than a day ahead.
+    assert (await _call(api, "set_alarm", time="7:30", day="monday")).error
+
+
+async def test_broadcast_skips_rooms_that_must_stay_quiet(home: Home) -> None:
+    api = await _api(home.hass)
+    calls = async_mock_service(home.hass, "assist_satellite", "announce")
+    result = await _call(api, "broadcast", message="Dinner is ready. Come down before it gets cold.")
+    assert set(result.data["said_in"]) == {"Bedroom", "Office"}
+    assert {c.data["entity_id"] for c in calls} == {"assist_satellite.puck_3", "assist_satellite.office_puck"}
+    # Someone in bed in the bedroom: only the office hears it.
+    home.hass.states.async_set("binary_sensor.bed_occupancy", "on", {"device_class": "occupancy"})
+    result = await _call(api, "broadcast", message="Dinner.")
+    assert result.data["said_in"] == ["Office"] and "Bedroom" in result.data["skipped"]
+
+
+async def test_leaving_check(home: Home) -> None:
+    api = await _api(home.hass)
+    assert (await _call(api, "leaving_check")).data["all_clear"]
+    home.entity("switch.soldering_iron", "on", labels={"glados_left_on"}, friendly_name="Soldering Iron")
+    home.hass.states.async_set("binary_sensor.bedroom_window", "on",
+                               {"device_class": "window", "friendly_name": "Bedroom window"})
+    data = (await _call(api, "leaving_check")).data
+    assert data == {"still_on": ["Soldering Iron"], "open": ["Bedroom window"], "all_clear": False}
