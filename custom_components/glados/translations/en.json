@@ -162,11 +162,15 @@
     },
     "test_announcement": {
       "name": "Test announcement",
-      "description": "Plays the whole show once: the opening beep, the facility Announcer warning about the room's real CO2 level, GLaDOS brushing it off, and the closing beep. Still quiet while someone sleeps.",
+      "description": "Plays the whole show once: the opening beep, the facility Announcer on the room's CO2 level, GLaDOS's reply, and the closing beep. Still quiet while someone sleeps.",
       "fields": {
         "satellite": {
           "name": "Satellite",
           "description": "Where to play it. Empty: the room people are in."
+        },
+        "co2": {
+          "name": "Pretend CO2",
+          "description": "Use this reading instead of the room's real one, such as 1500 for the critical warning."
         }
       }
     }

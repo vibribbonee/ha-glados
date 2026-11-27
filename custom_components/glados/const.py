@@ -28,6 +28,7 @@ ATTR_KEY = "key"
 ATTR_VALUE = "value"
 ATTR_PERSON = "person"
 ATTR_SATELLITE = "satellite"
+ATTR_CO2 = "co2"
 
 VOICE_GLADOS = "glados"
 VOICE_ANNOUNCER = "announcer"

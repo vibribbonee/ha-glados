@@ -31,6 +31,7 @@ from .const import (
 )
 from .registry import area_of, area_name, label_entities
 from .rooms import RoomContext, describe
+from .setpieces import CO2_CRITICAL, co2_announcement
 from .speech import clean_for_speech
 from .voice import async_say
 
@@ -47,6 +48,7 @@ class AnnounceRequest:
     voice: str = "glados"
     glados_after: str = ""
     satellite: str | None = None  # speak on this one, whatever room it is in
+    glados_line: str = ""  # a fixed GLaDOS reply after the Announcer (set pieces)
 
 
 def blocked_reason(ctx: RoomContext, ignore_schedule: bool, anywhere: bool) -> str:
@@ -113,10 +115,10 @@ class Announcer:
         if chime["preannounce"]:
             chime["preannounce_media_id"] = beep_in
 
-        after = ""
+        after = clean_for_speech(req.glados_line) if req.glados_line else ""
         if req.voice == VOICE_ANNOUNCER:
             line = clean_for_speech(req.facts)
-            if req.glados_after:
+            if req.glados_after and not after:
                 # Written before anything plays, so she follows without a pause.
                 after = await async_say(
                     self.hass,
@@ -158,40 +160,28 @@ class Announcer:
         return {"spoken": True, "reason": "", "speech": line, "after": after, "area": ctx.area}
 
     async def async_test(
-        self, satellite: str | None = None, context: Context | None = None
+        self,
+        satellite: str | None = None,
+        context: Context | None = None,
+        co2: float | None = None,
     ) -> dict[str, Any]:
-        """The whole show once: beep, the Announcer on the air, GLaDOS, beep.
+        """The whole show once: beep, the Announcer, GLaDOS, beep.
 
-        Uses the room's real CO2 reading, so it also shows the sensors work.
+        Uses the room's real CO2 reading unless co2 pretends another one.
         """
         area = area_of(self.hass, satellite) if satellite else None
         ctx = describe(self.hass, area, None)
         room = area_name(self.hass, ctx.area) if ctx.area else "facility"
-        if ctx.co2:
-            reading = f"Carbon dioxide in the {room} has reached {round(ctx.co2)} parts per million."
-        else:
-            reading = f"Air quality in the {room} has reached critical levels."
-        # The Announcer: a hazard, a safety measure "disabled" as if that were
-        # routine, a reassurance that cancels itself, a polite sign-off.
+        ppm = co2 if co2 is not None else (ctx.co2 or CO2_CRITICAL)
+        announcer, glados = co2_announcement(room, ppm)
         return await self.async_announce(
             AnnounceRequest(
-                facts=(
-                    f"Warning. {reading} Window reminders have been disabled to conserve "
-                    "energy. Please continue breathing at a reduced rate. Thank you for "
-                    "your cooperation."
-                ),
+                facts=announcer,
                 voice=VOICE_ANNOUNCER,
                 area=ctx.area,
                 satellite=satellite,
                 ignore_schedule=True,
-                # GLaDOS talks over it, the way she treats the old facility systems.
-                glados_after=(
-                    "Interrupt the Announcer's alarm the way you would an old, "
-                    "overdramatic facility system you barely tolerate. Never repeat its "
-                    "words or the number. Tell the occupant to ignore it in a way that is "
-                    "clearly worse than the alarm itself. Calm, bored, faintly pleased. "
-                    "At most two short sentences, under 25 words."
-                ),
+                glados_line=glados,
             ),
             context,
         )

@@ -66,6 +66,14 @@ test_announcement:
       selector:
         entity:
           domain: assist_satellite
+    co2:
+      example: 1500
+      selector:
+        number:
+          min: 0
+          max: 10000
+          unit_of_measurement: ppm
+          mode: box
 who:
   fields:
     person:

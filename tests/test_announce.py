@@ -136,19 +136,26 @@ async def test_bare_install_uses_her_own_voice_and_no_beeps(home: Home) -> None:
 
 
 async def test_the_test_announcement(home: Home) -> None:
-    # On the chosen satellite, with the room's real CO2, GLaDOS after the Announcer.
+    # A fixed set piece: the Announcer, then GLaDOS, on the chosen satellite.
     announcer, calls = _announcer(home)
-    with patch(
-        "custom_components.glados.announce.async_say",
-        AsyncMock(return_value="Breathe normally. While you still can."),
-    ) as say:
-        result = await announcer.async_test("assist_satellite.office_puck")
-    assert result["spoken"] and result["after"] == "Breathe normally. While you still can."
-    assert {c.data["entity_id"] for c in calls} == {"assist_satellite.office_puck"}
-    assert "Office" in calls[0].data["media_id"] or "office" in calls[0].data["media_id"].lower()
-    # The office has no CO2 sensor; the bedroom one reads 1240.
+    result = await announcer.async_test("assist_satellite.puck_3", co2=1500)
+    assert result["spoken"]
+    assert "1500%20parts%20per%20million" in calls[0].data["media_id"]
+    assert "Please%20open%20a%20window" in calls[0].data["media_id"]
+    assert calls[1].data["message"] == result["after"] and result["after"]
+    assert {c.data["entity_id"] for c in calls} == {"assist_satellite.puck_3"}
+    # Without a pretend reading, the bedroom's real 1240 is stale air.
     announcer, calls = _announcer(home)
-    with patch("custom_components.glados.announce.async_say", AsyncMock(return_value="x")) as say:
-        await announcer.async_test("assist_satellite.puck_3")
-    assert "1240%20parts%20per%20million" in calls[0].data["media_id"]
-    assert "Never repeat its words" in say.call_args.kwargs["task"]
+    await announcer.async_test("assist_satellite.puck_3")
+    assert "stale%2C%20at%201240" in calls[0].data["media_id"]
+
+
+def test_glados_backs_up_a_real_warning() -> None:
+    from custom_components.glados.setpieces import _GLADOS, co2_announcement, co2_level
+    assert [co2_level(x) for x in (700, 1200, 1500)] == ["fine", "stale", "critical"]
+    # Every critical and stale reply tells them to open the window.
+    for level in ("critical", "stale"):
+        for line in _GLADOS[level]:
+            assert "window" in line.lower(), line
+    announcer, _ = co2_announcement("Bedroom", 1499.6)
+    assert "1500 parts per million" in announcer

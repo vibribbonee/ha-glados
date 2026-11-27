@@ -37,6 +37,7 @@ from .announce import AnnounceRequest, Announcer
 from .const import (
     ATTR_ANYWHERE,
     ATTR_AREA,
+    ATTR_CO2,
     ATTR_FACTS,
     ATTR_GLADOS_AFTER,
     ATTR_IGNORE_SCHEDULE,
@@ -115,7 +116,12 @@ ANNOUNCE_SCHEMA = vol.Schema(
         vol.Optional(ATTR_SATELLITE): cv.entity_id,
     }
 )
-TEST_SCHEMA = vol.Schema({vol.Optional(ATTR_SATELLITE): cv.entity_id})
+TEST_SCHEMA = vol.Schema(
+    {
+        vol.Optional(ATTR_SATELLITE): cv.entity_id,
+        vol.Optional(ATTR_CO2): vol.All(vol.Coerce(float), vol.Range(min=0, max=10000)),
+    }
+)
 WHO_SCHEMA = vol.Schema({vol.Optional(ATTR_PERSON, default=""): cv.string})
 REMEMBER_SCHEMA = vol.Schema(
     {vol.Required(ATTR_KEY): cv.string, vol.Required(ATTR_VALUE): cv.string}
@@ -183,7 +189,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: GladosConfigEntry) -> bo
         return await data().announcer.async_announce(req, call.context)
 
     async def _test(call: ServiceCall) -> ServiceResponse:
-        return await data().announcer.async_test(call.data.get(ATTR_SATELLITE), call.context)
+        return await data().announcer.async_test(
+            call.data.get(ATTR_SATELLITE), call.context, call.data.get(ATTR_CO2)
+        )
 
     async def _who(call: ServiceCall) -> ServiceResponse:
         person = resolve_person(hass, call.data[ATTR_PERSON], call.context.user_id)
