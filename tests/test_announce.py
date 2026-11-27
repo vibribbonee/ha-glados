@@ -151,4 +151,4 @@ async def test_the_test_announcement(home: Home) -> None:
     with patch("custom_components.glados.announce.async_say", AsyncMock(return_value="x")) as say:
         await announcer.async_test("assist_satellite.puck_3")
     assert "1240%20parts%20per%20million" in calls[0].data["media_id"]
-    assert "real reading is 1240" in say.call_args.kwargs["task"]
+    assert "Never repeat its words" in say.call_args.kwargs["task"]

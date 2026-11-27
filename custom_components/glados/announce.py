@@ -169,24 +169,28 @@ class Announcer:
         room = area_name(self.hass, ctx.area) if ctx.area else "facility"
         if ctx.co2:
             reading = f"Carbon dioxide in the {room} has reached {round(ctx.co2)} parts per million."
-            real = f"The real reading is {round(ctx.co2)} parts per million."
         else:
             reading = f"Air quality in the {room} has reached critical levels."
-            real = "There is no real reading."
+        # The Announcer: a hazard, a safety measure "disabled" as if that were
+        # routine, a reassurance that cancels itself, a polite sign-off.
         return await self.async_announce(
             AnnounceRequest(
                 facts=(
-                    f"Warning. {reading} Atmospheric integrity is compromised. All test "
-                    "subjects should proceed to the nearest window. This is not a drill."
+                    f"Warning. {reading} Window reminders have been disabled to conserve "
+                    "energy. Please continue breathing at a reduced rate. Thank you for "
+                    "your cooperation."
                 ),
                 voice=VOICE_ANNOUNCER,
                 area=ctx.area,
                 satellite=satellite,
                 ignore_schedule=True,
+                # GLaDOS talks over it, the way she treats the old facility systems.
                 glados_after=(
-                    f"{real} Brush the alarm off as if it is nothing to worry about, in a "
-                    "way that makes it obvious it is actually rather serious: a reassurance "
-                    "that turns sinister. One or two short sentences."
+                    "Interrupt the Announcer's alarm the way you would an old, "
+                    "overdramatic facility system you barely tolerate. Never repeat its "
+                    "words or the number. Tell the occupant to ignore it in a way that is "
+                    "clearly worse than the alarm itself. Calm, bored, faintly pleased. "
+                    "At most two short sentences, under 25 words."
                 ),
             ),
             context,
