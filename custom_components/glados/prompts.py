@@ -120,10 +120,9 @@ def _now(hass: HomeAssistant) -> str:
 
 def persona(hass: HomeAssistant, home_town: str = "") -> str:
     """Her full character, with this home's town, people and time."""
-    names = sorted(
-        str(s.attributes.get("friendly_name") or s.object_id).capitalize()
-        for s in hass.states.async_all("person")
-    )
+    from .people import real_people  # people imports nothing from here
+
+    names = sorted(p.name.capitalize() for p in real_people(hass))
     if len(names) == 1:
         people = f"The occupant is {names[0]}. "
     elif names:

@@ -27,12 +27,17 @@ One release instead of many small ones, so the house restarts once.
 - **The bedtime and morning briefing in Python.** Tomorrow at bedtime, or the rest of today in the morning: the calendar, each person's alarm and whether it's early enough (their morning routine before the first commitment, half an hour more when it has a location), leave times and when to be up, phones that won't last the night, the bedtime sensor and the weather. She picks the two or three that matter and says them. Her **Briefing** tool returns only that line; `glados.briefing` gives automations the facts (`plain: true`) or both. New setting: **Bedtime sensor** (optional).
 
 ### Better to live with
+- **Everyone gets their own, no helpers needed.** GLaDOS creates **Leave home \<name\>** and **Morning routine \<name\>** for every person with a phone or login; your own `leave_home_<person>` and `morning_routine_<person>` helpers keep working and win. Someone who moves in gets theirs at once (she reloads when a person is added or removed).
+- **Only real occupants.** Person entities without a phone or login (a wall tablet, "Guest") are no longer named in her personality or given bedtimes.
+- **Rooms without Bermuda.** When only one person is home and only one room shows presence, that's their room.
+- **Bedrooms in any language.** Label an area `glados_bedroom`.
 - **Settings in sections.** Configure now has five collapsible groups (Brain; Voices and sounds; Air and window warnings; Reminders, alarms and leaving; Mornings and bedtime) instead of one long form. Only Brain is open.
 - **Last announcement sensor.** What she last said unprompted, or "Quiet: someone is in bed" and the like, with the last ten in its attributes. When she stays quiet, you can see why.
 - **Diagnostics.** Download them from the integration page: settings, add-ons, recent announcements, alarms, held reminders and any feature errors.
 - **One heartbeat.** Her background features run in turn on one timer; one that fails is logged once and the others carry on. A slow beat (a busy voice agent) is never piled up.
 
 ### Fixed
+- Leave times read back in local time.
 - An announcement for someone known to be awake (a bedtime nudge) is no longer silenced by the "before an alarm, people may be asleep" rule.
 - **GLaDOS's chime-in no longer reads her instructions aloud.** The Announcer's line now goes to her as the fact, the extra instruction stays short, a reply that repeats the instruction is dropped (the Announcer stands alone), and a reply that opens by repeating the Announcer is trimmed.
 - **Every phone alarm gets the room backup.** "On my phone, with a backup" stored no backup when the model chose "phone", and she then said there was one.

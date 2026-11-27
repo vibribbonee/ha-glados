@@ -12,7 +12,7 @@ from homeassistant.helpers.event import async_track_time_interval
 
 from .bedtime import bedtime_for
 from .const import DOMAIN
-from .people import Person, all_people
+from .people import Person, real_people
 
 UPDATE_EVERY = timedelta(minutes=1)
 
@@ -24,7 +24,7 @@ async def async_setup_entry(
     async_add_entities(
         [LastAnnouncementSensor(entry)]
         + [BedtimeSensor(entry, person, kind)
-           for person in all_people(hass) for kind in ("bedtime", "last_call")]
+           for person in real_people(hass) for kind in ("bedtime", "last_call")]
     )
 
 

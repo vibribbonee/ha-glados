@@ -97,6 +97,7 @@ LABEL_QUIET = "glados_quiet"
 LABEL_HEATING = "glados_heating"
 LABEL_COOLING = "glados_cooling"
 LABEL_OWN_CHIME = "glados_own_chime"
+LABEL_BEDROOM = "glados_bedroom"  # on an area: a bedroom, whatever its name
 LABEL_LEFT_ON = "glados_left_on"  # should not stay on when everyone leaves or sleeps
 
 # Device classes that mean someone is in a room

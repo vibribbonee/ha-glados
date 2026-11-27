@@ -43,8 +43,8 @@ from .const import (
 from .people import (
     Person,
     all_people,
+    async_set_leave,
     has_leave_helper,
-    leave_helper,
     leave_time,
     people_in_area,
     person_area,
@@ -209,11 +209,7 @@ class Mornings:
             return
         minutes = routine_minutes(self.hass, person, int(self.data.options.get(CONF_ROUTINE_MINUTES, 35)))
         at = (now + timedelta(minutes=minutes)).replace(second=0, microsecond=0)
-        await self.hass.services.async_call(
-            "input_datetime", "set_datetime",
-            {"entity_id": leave_helper(person), "datetime": at.strftime("%Y-%m-%d %H:%M:%S")},
-            blocking=True,
-        )
+        await async_set_leave(self.hass, person, at)
 
     async def _greet_pending(self, now: datetime) -> list[dict[str, Any]]:
         pending = self._pending()

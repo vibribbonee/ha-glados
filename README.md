@@ -88,32 +88,19 @@ Nothing is hard-coded. She works it out from your areas, labels and names:
 
 She stays quiet when someone is in bed, before a morning alarm, in a dark bedroom, on Do Not Disturb, or while a video plays in that room.
 
-For each person, optionally:
+Add `glados_bedroom` to an area to mark it as a bedroom in any language. Rooms named like one ("bedroom", "slaapkamer") count anyway.
 
-| Helper | Meaning | Without it |
-|---|---|---|
-| `input_datetime.leave_home_<person>` | When they leave home | No leave reminders |
-| `input_number.morning_routine_<person>` | Minutes from alarm to the door | `input_number.morning_routine_minutes`, then the default |
-| `todo.<person>_s_list` | Their own reminders | `todo.to_do` |
+**Everyone gets their own**, with no helpers to make: GLaDOS creates, for each person with a phone or a Home Assistant login,
 
-Rooms of people come from a Bermuda area sensor (`sensor.<phone>_area`) on one of their tracker devices, if you have one.
-
-## Her tools
-
-With **GLaDOS** ticked under the chat agent's **Control Home Assistant**, she gets these besides the usual device control. Dates are worked out in Python and handed to her spelled out, so even a small model says the right day.
-
-| Tool | For |
+| Entity | Meaning |
 |---|---|
-| Set reminder | "Remind me tomorrow at 3 to call the dentist": a to-do with a due time on that person's own list |
-| Set leave time | "I have to leave at 7:45 on Monday": with the time to get up |
-| Add to calendar | "Put the dentist on Tuesday at 14:30", or an all-day event |
-| Upcoming events | "What's on this week?", "How many days until Christmas?" |
-| Note in permanent file | Anything worth keeping about someone; what's in the file goes into her prompt |
-| Set volume | "Turn the TV up a little": a TV that plays through a soundbar changes the soundbar |
-| Set alarm | "Wake me at 7:30": a morning alarm goes on that person's own Android phone, with a backup on the room's speaker; any other alarm rings on the speaker. Say "on my phone" or "in the bedroom" to choose |
-| Stop alarm | "Stop", "I'm up", "snooze" while a speaker alarm rings |
-| Broadcast | "Tell everyone dinner is ready": every other room with a speaker, except where someone sleeps or watches a video |
-| Leaving check | "I'm heading out" or "is everything off?": what's still on among devices labelled `glados_left_on`, and which windows and doors are open |
+| Leave home \<name\> | When they leave home, set by voice or on a dashboard |
+| Morning routine \<name\> | Minutes from alarm to the door |
+| Bedtime \<name\>, Last call \<name\> | From their own morning alarm and the sleep settings |
+
+Someone who moves in gets theirs straight away. Existing helpers keep working and win: `input_datetime.leave_home_<person>`, `input_number.morning_routine_<person>`. Their own reminders go to `todo.<person>_s_list` when that list exists, otherwise to the shared To-do list. Person entities without a phone or login (a wall tablet, "Guest") are not occupants.
+
+**Which room someone is in** comes from a Bermuda area sensor on one of their devices. Without one: when only one person is home and only one room shows presence, that's theirs; otherwise she speaks where people are.
 
 ## Services
 

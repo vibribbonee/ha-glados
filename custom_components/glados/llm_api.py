@@ -47,8 +47,8 @@ from .people import (
     Person,
     all_people,
     android_phone_alarms,
+    async_set_leave,
     has_leave_helper,
-    leave_helper,
     own_list,
     people_in_area,
     person_area,
@@ -65,7 +65,7 @@ if TYPE_CHECKING:
 API_ID = DOMAIN
 API_NAME = "GLaDOS"
 REMINDER_NOTE = "Reminder set by voice"
-CLEARED = "2000-01-01 00:00:00"
+from .people import CLEARED  # noqa: E402  (re-exported for callers and tests)
 FILE_PROMPT_CHARS = 300
 MAX_DAYS_AHEAD = 62
 
@@ -222,23 +222,20 @@ class SetLeaveTime(GladosTool):
     async def run(self, hass, args, llm_context):
         candidates = [x for x in all_people(hass) if has_leave_helper(hass, x)]
         if not candidates:
-            return _error(
-                "Nobody has a leave time helper. Create input_datetime.leave_home_<person>."
-            )
+            return _error("Nobody has a leave time yet. Reload GLaDOS to create them.")
         person: Person | None = _who(hass, llm_context, args.get("person", ""), candidates)
         if person is None:
             return _error(
                 "Ask who is leaving. People with a leave time: "
                 + ", ".join(x.name for x in candidates)
             )
-        helper = leave_helper(person)
         t = parse_time(args.get("time"))
         if args["clear"] or t is None:
-            await self._set(hass, helper, CLEARED, llm_context)
+            await async_set_leave(hass, person, None, llm_context.context)
             return llm.ToolResult(data={"person": person.name, "leave": "none, no reminder"})
         now = dt_util.now()
         at = resolve_moment(args.get("day"), t, now)
-        await self._set(hass, helper, at.strftime("%Y-%m-%d %H:%M:%S"), llm_context)
+        await async_set_leave(hass, person, at, llm_context.context)
         routine = routine_minutes(hass, person, int(self.data.options[CONF_ROUTINE_MINUTES]))
         return llm.ToolResult(
             data={
@@ -250,16 +247,6 @@ class SetLeaveTime(GladosTool):
                 "get_up_by": _hm(at - timedelta(minutes=routine)),
                 "routine_minutes": routine,
             }
-        )
-
-    @staticmethod
-    async def _set(hass, helper: str, value: str, llm_context) -> None:
-        await hass.services.async_call(
-            "input_datetime",
-            "set_datetime",
-            {"entity_id": helper, "datetime": value},
-            blocking=True,
-            context=llm_context.context,
         )
 
 

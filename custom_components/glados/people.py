@@ -13,25 +13,28 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Any
 import re
 
 from homeassistant.const import STATE_HOME, STATE_NOT_HOME
 from homeassistant.core import HomeAssistant, State
-from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import device_registry as dr, entity_registry as er
 from homeassistant.util import slugify
 from homeassistant.util import dt as dt_util
 
 from .const import (
+    BED_PATTERN,
     LEAVE_HELPER_PREFIX,
     OWN_LIST_TEMPLATE,
     ROUTINE_DEFAULT_HELPER,
     ROUTINE_HELPER_PREFIX,
     SHARED_LIST,
 )
-from .registry import device_entities, device_of, resolve_area
+from .registry import area_of, device_entities, device_of, resolve_area
 
 _AREA_SENSOR = re.compile(r"^sensor\..*_area$")
 _NEXT_ALARM = re.compile(r"^sensor\..*next_alarm$")
+_BED = re.compile(BED_PATTERN)
 _NOTIFY = re.compile(r"^notify\.")
 # Notify targets that are not phones: headsets and watches stay quiet.
 _NOT_A_PHONE = re.compile(r"quest|watch|tv|tablet", re.IGNORECASE)
@@ -71,6 +74,19 @@ def all_people(hass: HomeAssistant) -> list[Person]:
     return [_person(s) for s in hass.states.async_all("person")]
 
 
+def real_people(hass: HomeAssistant) -> list[Person]:
+    """People who live here: with a device tracker or a Home Assistant login.
+
+    A person entity made for a wall tablet or "Guest" has neither, and is not an
+    occupant: no bedtime, no leave time, not named in her personality.
+    """
+    found = []
+    for state in hass.states.async_all("person"):
+        if state.attributes.get("device_trackers") or state.attributes.get("user_id"):
+            found.append(_person(state))
+    return found
+
+
 def people_home(hass: HomeAssistant) -> list[Person]:
     """Everyone at home."""
     return [p for p in all_people(hass) if p.home]
@@ -106,7 +122,23 @@ def person_area(hass: HomeAssistant, person: Person | str) -> str | None:
         state = hass.states.get(sensor)
         if state and (area := resolve_area(hass, state.state)):
             return area
-    return None
+    # No room tracking (such as Bermuda): when they are the only one home and
+    # exactly one room shows presence, that is where they are.
+    if not person.home or [p.entity_id for p in people_home(hass)] != [person.entity_id]:
+        return None
+    occupied = _occupied_rooms(hass)
+    return occupied[0] if len(occupied) == 1 else None
+
+
+def _occupied_rooms(hass: HomeAssistant) -> list[str]:
+    rooms = set()
+    for state in hass.states.async_all("binary_sensor"):
+        if (state.state == "on"
+                and state.attributes.get("device_class") in ("occupancy", "presence", "motion")
+                and not _BED.search(state.entity_id)
+                and (area := area_of(hass, state.entity_id))):
+            rooms.add(area)
+    return sorted(rooms)
 
 
 def people_in_area(hass: HomeAssistant, area_id: str) -> list[Person]:
@@ -195,19 +227,35 @@ def resolve_person(
 # Per-person settings -------------------------------------------------------
 
 
-def leave_helper(person: Person) -> str:
-    """The person's leave-time helper (it may not exist)."""
-    return f"{LEAVE_HELPER_PREFIX}{person.slug}"
+LEAVE_UNIQUE = "leave_home_{}"  # GLaDOS's own entity per person
+ROUTINE_UNIQUE = "morning_routine_{}"
+CLEARED = "2000-01-01 00:00:00"
+
+
+def _own_entity(hass: HomeAssistant, domain: str, unique: str) -> str | None:
+    return er.async_get(hass).async_get_entity_id(domain, "glados", unique)
+
+
+def leave_helper(hass: HomeAssistant, person: Person) -> str:
+    """Where the person's leave time lives.
+
+    Their own input_datetime.leave_home_<person> if there is one, else the
+    "Leave home <name>" entity GLaDOS makes for everyone.
+    """
+    own = f"{LEAVE_HELPER_PREFIX}{person.slug}"
+    if hass.states.get(own) is not None:
+        return own
+    return _own_entity(hass, "datetime", LEAVE_UNIQUE.format(person.entity_id)) or own
 
 
 def has_leave_helper(hass: HomeAssistant, person: Person) -> bool:
-    """True when the person has a leave-time helper."""
-    return hass.states.get(leave_helper(person)) is not None
+    """True when the person has somewhere to keep a leave time."""
+    return hass.states.get(leave_helper(hass, person)) is not None
 
 
 def leave_time(hass: HomeAssistant, person: Person) -> datetime | None:
     """The person's leave time, or None when it is cleared (the year 2000) or unset."""
-    state = hass.states.get(leave_helper(person))
+    state = hass.states.get(leave_helper(hass, person))
     if state is None or state.state in _UNUSABLE:
         return None
     at = dt_util.parse_datetime(state.state)
@@ -215,12 +263,38 @@ def leave_time(hass: HomeAssistant, person: Person) -> datetime | None:
         return None
     if at.tzinfo is None:
         at = at.replace(tzinfo=dt_util.get_default_time_zone())
-    return None if at.year <= 2000 else at
+    return None if at.year <= 2000 else dt_util.as_local(at)
+
+
+async def async_set_leave(hass: HomeAssistant, person: Person, value: datetime | None,
+                          context: Any = None) -> None:
+    """Set (or with None, clear) the person's leave time, wherever it lives."""
+    helper = leave_helper(hass, person)
+    text = value.strftime("%Y-%m-%d %H:%M:%S") if value else CLEARED
+    if helper.startswith("datetime."):
+        at = value or datetime(2000, 1, 1, tzinfo=dt_util.get_default_time_zone())
+        await hass.services.async_call(
+            "datetime", "set_value", {"entity_id": helper, "datetime": at},
+            blocking=True, context=context)
+    else:
+        await hass.services.async_call(
+            "input_datetime", "set_datetime", {"entity_id": helper, "datetime": text},
+            blocking=True, context=context)
 
 
 def routine_minutes(hass: HomeAssistant, person: Person, default: int = 35) -> int:
-    """Minutes from alarm to the door: the person's own, the house default, or default."""
-    for entity_id in (f"{ROUTINE_HELPER_PREFIX}{person.slug}", ROUTINE_DEFAULT_HELPER):
+    """Minutes from alarm to the door.
+
+    Their own input_number.morning_routine_<person>, else GLaDOS's "Morning
+    routine <name>", else the house's input_number.morning_routine_minutes,
+    else the default from the settings.
+    """
+    candidates = [
+        f"{ROUTINE_HELPER_PREFIX}{person.slug}",
+        _own_entity(hass, "number", ROUTINE_UNIQUE.format(person.entity_id)),
+        ROUTINE_DEFAULT_HELPER,
+    ]
+    for entity_id in filter(None, candidates):
         state = hass.states.get(entity_id)
         if state and state.state not in _UNUSABLE:
             try:

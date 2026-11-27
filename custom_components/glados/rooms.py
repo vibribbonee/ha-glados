@@ -14,12 +14,14 @@ from typing import Any
 
 from homeassistant.const import STATE_ON
 from homeassistant.core import HomeAssistant, State
+from homeassistant.helpers import area_registry as ar, label_registry as lr
 from homeassistant.util import dt as dt_util
 
 from .const import (
     BED_CLASSES,
     BED_PATTERN,
     BEDROOM_NAME_PATTERN,
+    LABEL_BEDROOM,
     LABEL_COOLING,
     LABEL_GLADOS,
     LABEL_HEATING,
@@ -149,6 +151,17 @@ def _before_alarm(
     return min(today).strftime("%H:%M") if today else ""
 
 
+def is_bedroom(hass: HomeAssistant, area: str) -> bool:
+    """A bedroom: labelled glados_bedroom (any language), or named like one."""
+    entry = ar.async_get(hass).async_get_area(area)
+    if entry is None:
+        return False
+    labels = lr.async_get(hass)
+    names = {(found.name or "").lower() for label in entry.labels
+             if (found := labels.async_get_label(label))}
+    return LABEL_BEDROOM in names | set(entry.labels) or bool(_BEDROOM.search(entry.name))
+
+
 def describe(
     hass: HomeAssistant,
     area: str | None = None,
@@ -188,7 +201,7 @@ def describe(
     lights = [e for e in glados if e.startswith("light.") and e in ents]
     ctx.dark_bedroom = bool(
         a
-        and _BEDROOM.search(ctx.area_name)
+        and is_bedroom(hass, a)
         and lights
         and not any(hass.states.is_state(e, STATE_ON) for e in lights)
     )

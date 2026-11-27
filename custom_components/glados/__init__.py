@@ -25,12 +25,15 @@ import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import (
+    Event,
+    callback,
     HomeAssistant,
     ServiceCall,
     ServiceResponse,
     SupportsResponse,
 )
 import homeassistant.helpers.config_validation as cv
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers import llm
 
 from .addon import async_start_addons
@@ -97,7 +100,13 @@ from .setpieces import STYLE_ANNOUNCER, STYLE_GLADOS
 from .speech import clean_for_speech
 from .voice import async_say
 
-PLATFORMS = [Platform.BUTTON, Platform.CONVERSATION, Platform.SENSOR]
+PLATFORMS = [
+    Platform.BUTTON,
+    Platform.CONVERSATION,
+    Platform.DATETIME,
+    Platform.NUMBER,
+    Platform.SENSOR,
+]
 
 SERVICES = (
     SERVICE_CLEAN_TEXT,
@@ -203,6 +212,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: GladosConfigEntry) -> bo
     air = AirWatch(hass, run)
     heart.add("air and windows", air.async_tick)
     entry.async_on_unload(heart.start())
+
+    @callback
+    def _people_changed(event: Event[er.EventEntityRegistryUpdatedData]) -> None:
+        """Someone moved in or out: reload, so their own entities appear or go."""
+        if event.data["entity_id"].startswith("person.") and event.data["action"] in ("create", "remove"):
+            hass.config_entries.async_schedule_reload(entry.entry_id)
+
+    entry.async_on_unload(
+        hass.bus.async_listen(er.EVENT_ENTITY_REGISTRY_UPDATED, _people_changed)
+    )
     entry.async_on_unload(async_start_addons(hass, entry.runtime_data))
 
     def data() -> GladosData:
@@ -280,7 +299,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: GladosConfigEntry) -> bo
             "home": person.home,
             "area": person_area(hass, person) or "",
             "phones": phones(hass, person),
-            "leave_helper": leave_helper(person) if has_leave_helper(hass, person) else "",
+            "leave_helper": leave_helper(hass, person) if has_leave_helper(hass, person) else "",
             "leave": leave.isoformat() if leave else "",
             "routine_minutes": routine_minutes(
                 hass, person, int(data().options[CONF_ROUTINE_MINUTES])

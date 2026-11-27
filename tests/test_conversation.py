@@ -74,13 +74,15 @@ async def test_reply_is_cleaned(hass: HomeAssistant) -> None:
 
 
 async def test_personality_travels_along(hass: HomeAssistant) -> None:
-    hass.states.async_set("person.ada", "home", {"friendly_name": "ada"})
+    hass.states.async_set("person.ada", "home", {"friendly_name": "ada", "user_id": "u1"})
+    hass.states.async_set("person.tablet", "home", {"friendly_name": "Tablet"})  # not an occupant
     fake = await _setup(hass, None, home_town="Delft")
     await conversation.async_converse(
         hass, "who are you", None, Context(), agent_id="conversation.glados"
     )
     prompt = fake.seen[0].extra_system_prompt
     assert "Glad-oss" in prompt and "in Delft" in prompt and "occupant is Ada" in prompt
+    assert "Tablet" not in prompt
 
 
 async def test_personality_off(hass: HomeAssistant) -> None:
