@@ -154,18 +154,18 @@ def co2_glados_alone(
 _WINDOW_ANNOUNCER = {
     "open": (
         "Notice. The {window}{where} has been open for {minutes} minutes. Outside "
-        "temperature: {out} degrees. The heating is now heating the street. Please "
+        "temperature: {out}. The heating is now heating the street. Please "
         "close the window.",
         "Attention. Thermal containment{where} has been breached for {minutes} minutes. "
-        "It is {out} degrees outside. Please close the {window}. Thank you.",
+        "It is {out} outside. Please close the {window}. Thank you.",
     ),
     "fresh": (
-        "Air quality{where} has been restored. It is {out} degrees outside. Please "
+        "Air quality{where} has been restored. It is {out} outside. Please "
         "close the window. Thank you for ventilating responsibly.",
     ),
     "empty": (
         "Notice. The {window}{where} has been open for {minutes} minutes. Nobody is "
-        "in that room. It is {out} degrees outside. Please close it.",
+        "in that room. It is {out} outside. Please close it.",
     ),
 }
 
@@ -189,17 +189,17 @@ _WINDOW_GLADOS = {
 _WINDOW_GLADOS_ALONE = {
     "open": (
         "The {window}{where} has been open for {minutes} minutes, and it's {out} "
-        "degrees outside. Close it. The street is warm enough now.",
-        "{minutes} minutes of open window at {out} degrees. I'm heating the outdoors on "
+        "outside. Close it. The street is warm enough now.",
+        "{minutes} minutes of open window at {out}. I'm heating the outdoors on "
         "your behalf. Close the {window}.",
     ),
     "fresh": (
-        "The air{where} is breathable again. It's {out} degrees outside, so close the "
+        "The air{where} is breathable again. It's {out} outside, so close the "
         "window. Fresh air, not frostbite.",
     ),
     "empty": (
         "The {window}{where} has been open for {minutes} minutes, and nobody is in "
-        "there. It's {out} degrees outside. Go and close it. That room has no one "
+        "there. It's {out} outside. Go and close it. That room has no one "
         "left to warm.",
     ),
 }
@@ -216,11 +216,13 @@ def window_lines(
 ) -> tuple[str | None, str]:
     """(Announcer line or None, GLaDOS line) for an open window: open, fresh or empty."""
     pick = (rng or random).choice
+    degrees = round(out)
     fmt = {
         "window": window,
-        "where": f" in the {room}" if room else "",
+        # "Office window in the Office" says the room twice.
+        "where": f" in the {room}" if room and room.lower() not in window.lower() else "",
         "minutes": minutes,
-        "out": round(out),
+        "out": f"{degrees} degree" if abs(degrees) == 1 else f"{degrees} degrees",
     }
     if style == STYLE_GLADOS:
         return None, pick(_WINDOW_GLADOS_ALONE[kind]).format(**fmt)

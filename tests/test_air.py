@@ -135,7 +135,7 @@ async def test_window_in_an_empty_room(home: Home, freezer) -> None:
     result = await watch.async_check_loose_windows(rooms)
     # Said where Nico is, about the office, by GLaDOS herself.
     assert result["spoken"] and result["area"] == home.bedroom
-    assert "Office window in the Office" in result["speech"] and "nobody" in result["speech"]
+    assert "Office window has been open" in result["speech"] and "nobody" in result["speech"]
     assert calls[0].data["entity_id"] == "assist_satellite.puck_3"
     assert await watch.async_check_loose_windows(rooms) is None
 
