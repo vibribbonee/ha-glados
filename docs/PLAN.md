@@ -27,7 +27,7 @@ Next:
 2. Turn each old script into a one-step wrapper around its service, so nothing calling it changes. Compare the results for a day.
 3. Move on to phase 2: her own LLM API, so chat replies are cleaned and the tools compute dates.
 
-The reference copies of the live setup are in `reference/current-setup/`.
+Copies of the live setup are kept locally in `reference/current-setup/`, outside the repository.
 
 ### Per person
 

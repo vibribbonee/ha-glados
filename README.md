@@ -23,6 +23,6 @@ python3 -m venv .venv
 .venv/bin/python -m pytest
 ```
 
-`reference/current-setup/` holds the prompt and the scripts and automations this integration replaces.
+A local, untracked `reference/current-setup/` folder holds copies of the live prompt, scripts and automations this integration replaces.
 
 [MIT license](LICENSE).
