@@ -170,6 +170,11 @@ async def test_set_alarm(home: Home) -> None:
     result = await _call(api, "set_alarm", time="16:00", label="oven")
     assert result.data["rings"] == "on the speaker in the Bedroom" and len(calls) == 1
 
+    # Asked for the phone in the evening: the phone, and still the backup.
+    result = await _call(api, "set_alarm", time="20:28", ring_on="phone")
+    assert "backup in the Bedroom" in result.data["rings"] and len(calls) == 2
+    assert sum(a.backup for a in clock.alarms()) == 2
+
     # Asked for the phone on Monday: too far ahead, so the room, with a note.
     result = await _call(api, "set_alarm", time="7:30", day="monday", ring_on="phone")
     assert "next 24 hours" in result.data["note"] and "speaker" in result.data["rings"]

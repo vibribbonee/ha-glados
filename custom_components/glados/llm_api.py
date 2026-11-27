@@ -474,9 +474,9 @@ class SetAlarm(GladosTool):
     title = "Set alarm"
     description = (
         "'Wake me at 7:30', 'set an alarm for 6 tomorrow', 'alarm at 4 for the oven'. "
-        "A morning alarm goes on the person's own phone, with a backup on the room's "
-        "speaker that only rings if the phone alarm fails. Any other alarm rings on the "
-        "room's speaker. ring_on only when they say where. For a countdown (in 10 "
+        "A morning alarm goes on the person's own phone; every phone alarm gets a backup "
+        "on the room's speaker that only rings if the phone alarm fails. Any other alarm "
+        "rings on the room's speaker. ring_on only when they say where: phone or room. For a countdown (in 10 "
         "minutes) use the timer tools; for a spoken note, set_reminder. Say the time, "
         "day and where it rings as returned."
     )
@@ -486,7 +486,7 @@ class SetAlarm(GladosTool):
             p.Optional("day", description=f"{_DAY}. Empty: the next time it comes."): str,
             p.Optional("person", description=_PERSON): str,
             p.Optional("label", description="Short label, such as Dentist."): str,
-            p.Optional("ring_on", description="phone, room or both, only when they say."): p.In(
+            p.Optional("ring_on", description="phone or room, only when they say."): p.In(
                 ["phone", "room", "both"]
             ),
         }
@@ -503,7 +503,10 @@ class SetAlarm(GladosTool):
         if person is None and wanted:
             return _error(f"No person called {wanted}.")
         morning = 3 <= at.hour < MORNING_ENDS_HOUR
-        ring_on = args.get("ring_on") or ("both" if morning else "room")
+        # A phone alarm always gets the backup: it only rings when the phone fails.
+        ring_on = args.get("ring_on") or ("phone" if morning else "room")
+        if ring_on == "phone":
+            ring_on = "both"
         phones = android_phone_alarms(hass, person) if person else []
         notes: list[str] = []
         if ring_on in ("phone", "both") and not phones:
