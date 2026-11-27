@@ -37,7 +37,8 @@
           "co2_alerts": "Air and window warnings",
           "co2_reminder_minutes": "CO2 reminder",
           "cold_outside_below": "Cold outside below",
-          "alarm_backup_minutes": "Alarm backup after"
+          "alarm_backup_minutes": "Alarm backup after",
+          "reminders": "Read out reminders"
         },
         "data_description": {
           "chat_agent": "The conversation agent she thinks with, such as an Ollama, OpenAI, Google or Anthropic agent with Assist control on. Not GLaDOS itself.",
@@ -52,7 +53,8 @@
           "co2_alerts": "Warn in the room when the air goes stale (1000 ppm) or critical (1500 ppm), and when a window stays open in the cold. Announcer: the facility Announcer warns and GLaDOS replies. GLaDOS: she warns on her own.",
           "co2_reminder_minutes": "Remind again after this many minutes while the air stays bad. 0: no reminder.",
           "cold_outside_below": "Below this outside temperature, a window open for 20 minutes gets a reminder, once per opening; in an empty room, she tells whoever is home.",
-          "alarm_backup_minutes": "A morning alarm on a phone that has not been dismissed by then, or a phone that is off or never showed the alarm, rings on the room's speaker."
+          "alarm_backup_minutes": "A morning alarm on a phone that has not been dismissed by then, or a phone that is off or never showed the alarm, rings on the room's speaker.",
+          "reminders": "To-dos with a due time on each person's own list and the shared To-do list, said in their room when due, or sent to their phone. What comes due while they sleep goes to the phone and is also said after they wake. Turn off if an automation already does this."
         }
       }
     }

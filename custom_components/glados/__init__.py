@@ -35,6 +35,7 @@ from homeassistant.helpers import llm
 
 from .air import AirWatch
 from .alarms import AlarmClock
+from .reminders import Reminders
 from .announce import AnnounceRequest, Announcer
 from .const import (
     ATTR_ANYWHERE,
@@ -164,6 +165,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: GladosConfigEntry) -> bo
     entry.async_on_unload(AirWatch(hass, entry.runtime_data).start())
     entry.runtime_data.alarms = AlarmClock(hass, entry.runtime_data)
     entry.async_on_unload(entry.runtime_data.alarms.start())
+    entry.async_on_unload(Reminders(hass, entry.runtime_data).start())
 
     def data() -> GladosData:
         return entry.runtime_data

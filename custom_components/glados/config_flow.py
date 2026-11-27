@@ -26,6 +26,7 @@ from .const import (
     CONF_CHAT_AGENT,
     CONF_HOME_TOWN,
     CONF_PERSONALITY,
+    CONF_REMINDERS,
     CONF_ROUTINE_MINUTES,
     CONF_SCHEDULE,
     CONF_VOICE_AGENT,
@@ -66,6 +67,9 @@ def _options_schema(current: dict[str, Any]) -> vol.Schema:
             opt(CONF_BEEP_OUT): TEXT,
             opt(CONF_SCHEDULE): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain="schedule")
+            ),
+            vol.Required(CONF_REMINDERS, default=bool(current[CONF_REMINDERS])): (
+                selector.BooleanSelector()
             ),
             vol.Required(CONF_CO2_ALERTS, default=str(current[CONF_CO2_ALERTS])): (
                 selector.SelectSelector(
