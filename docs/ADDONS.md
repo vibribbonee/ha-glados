@@ -20,6 +20,7 @@ And it can use her parts:
 | `spoken_date`, `days_away`, `resolve_moment`, `parse_time` | Dates worked out in Python, ready to read aloud |
 | `clean_for_speech` | Text made safe for the voice |
 | `people_home`, `person_area`, `phones` | Who is home, the room they are in, their phones' notify entities |
+| `who_is_asking(hass, llm_context, name)` | Who a tool call is for: a name said, else the person in the speaker's room |
 
 Only what `custom_components.glados.addon` exports is the stable interface (`API_VERSION = 1`). Everything else in GLaDOS can change between versions.
 

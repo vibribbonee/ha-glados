@@ -60,6 +60,7 @@ __all__ = [
     "clean_for_speech",
     "days_away",
     "glados_data",
+    "who_is_asking",
     "parse_time",
     "people_home",
     "person_area",
@@ -178,6 +179,14 @@ async def async_announce(
     if (data := glados_data(hass)) is None:
         return {"spoken": False, "reason": "GLaDOS is not loaded", "speech": "", "after": ""}
     return await data.announcer.async_announce(request, context)
+
+
+def who_is_asking(hass: HomeAssistant, llm_context: llm.LLMContext, name: str = "") -> Person | None:
+    """Who a tool call is for: a name said, else the one person in the speaker's room,
+    else the Home Assistant user who asked, else the only person at home."""
+    from .llm_api import _who
+
+    return _who(hass, llm_context, name)
 
 
 def __getattr__(name: str) -> Any:
