@@ -119,3 +119,27 @@ async def test_permanent_file(home: Home) -> None:
     ctx = llm.LLMContext(platform="t", context=None, language="en", assistant="c", device_id=None)
     again = await llm.async_get_api(home.hass, DOMAIN, ctx)
     assert "Nico hates mushrooms" in again.api_prompt
+
+
+async def test_volume_follows_the_sound(home: Home) -> None:
+    # The TV sends its sound to the soundbar, so the soundbar gets louder.
+    home.entity("media_player.tv", "on", area=home.bedroom, device_class="tv",
+                sound_output="external_arc", volume_level=0.21, supported_features=4,
+                friendly_name="TV")
+    home.entity("media_player.soundbar", "playing", area=home.bedroom,
+                volume_level=0.30, supported_features=4, friendly_name="SoundTouch 300")
+    home.entity("media_player.kitchen", "playing", area=home.office,
+                volume_level=0.50, supported_features=4)
+    api = await _api(home.hass)
+    calls = async_mock_service(home.hass, "media_player", "volume_set")
+    result = await _call(api, "set_volume", device="TV", change="up")
+    assert calls[-1].data == {"entity_id": "media_player.soundbar", "volume_level": 0.4}
+    assert result.data == {"device": "SoundTouch 300", "volume": "40 percent",
+                           "note": "The TV plays through it."}
+    # A TV with its own speakers is changed itself.
+    home.hass.states.async_set("media_player.tv", "on", {
+        "device_class": "tv", "sound_output": "tv_speaker", "volume_level": 0.21,
+        "supported_features": 4, "friendly_name": "TV"})
+    await _call(api, "set_volume", device="tv", level=35)
+    assert calls[-1].data == {"entity_id": "media_player.tv", "volume_level": 0.35}
+    assert (await _call(api, "set_volume", device="radio")).error

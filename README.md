@@ -86,6 +86,7 @@ With **GLaDOS** ticked under the chat agent's **Control Home Assistant**, she ge
 | Add to calendar | "Put the dentist on Tuesday at 14:30", or an all-day event |
 | Upcoming events | "What's on this week?", "How many days until Christmas?" |
 | Note in permanent file | Anything worth keeping about someone; what's in the file goes into her prompt |
+| Set volume | "Turn the TV up a little": a TV that plays through a soundbar changes the soundbar |
 
 ## Services
 

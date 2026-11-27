@@ -25,9 +25,10 @@ import probatio as p
 from homeassistant.components.calendar import CalendarEntityFeature
 from homeassistant.const import ATTR_SUPPORTED_FEATURES
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import llm
+from homeassistant.helpers import device_registry as dr, llm
 from homeassistant.util import dt as dt_util
 
+from .audio import audible_player, find_player
 from .const import CONF_ROUTINE_MINUTES, DOMAIN, LABEL_GLADOS
 from .dates import days_away, parse_time, resolve_date, resolve_moment, spoken_date
 from .people import (
@@ -376,7 +377,61 @@ class NoteInFile(GladosTool):
         return llm.ToolResult(data={"noted": note})
 
 
-TOOLS = (SetReminder, SetLeaveTime, AddToCalendar, UpcomingEvents, NoteInFile)
+class SetVolume(GladosTool):
+    name = "set_volume"
+    title = "Set volume"
+    description = (
+        "Every volume change: louder, quieter, a little up, or a level. device: the "
+        "name said, such as the TV; empty for whatever is playing. A TV whose sound "
+        "comes out of a soundbar is handled here: the soundbar is changed. Report "
+        "the device and level it returns, never a guess."
+    )
+    parameters = p.Schema(
+        {
+            p.Optional("device", description="Name of the TV or speaker. Empty: what is playing."): str,
+            p.Optional("change", description="up or down."): p.In(["up", "down"]),
+            p.Optional("step", description="Percent to change by.", default=10): p.All(
+                p.Coerce(int), p.Range(min=1, max=50)
+            ),
+            p.Optional("level", description="Set to this percent instead."): p.All(
+                p.Coerce(int), p.Range(min=0, max=100)
+            ),
+        }
+    )
+
+    async def run(self, hass, args, llm_context):
+        here = None
+        if llm_context.device_id:
+            device = dr.async_get(hass).async_get(llm_context.device_id)
+            here = device.area_id if device else None
+        wanted = args.get("device", "")
+        asked = find_player(hass, wanted, here)
+        if asked is None:
+            return _error(f"No speaker or TV called {wanted}." if wanted else "Nothing is playing.")
+        target = audible_player(hass, asked)
+        state = hass.states.get(target)
+        current = state.attributes.get("volume_level") if state else None
+        if "level" in args:
+            new = args["level"]
+        elif current is None:
+            return _error(f"{state.name if state else target} does not report its volume.")
+        else:
+            delta = args["step"] if args.get("change", "up") == "up" else -args["step"]
+            new = min(100, max(0, round(current * 100) + delta))
+        await hass.services.async_call(
+            "media_player",
+            "volume_set",
+            {"entity_id": target, "volume_level": new / 100},
+            blocking=True,
+            context=llm_context.context,
+        )
+        result = {"device": state.name if state else target, "volume": f"{new} percent"}
+        if target != asked:
+            result["note"] = f"The {hass.states.get(asked).name} plays through it."
+        return llm.ToolResult(data=result)
+
+
+TOOLS = (SetReminder, SetLeaveTime, AddToCalendar, UpcomingEvents, NoteInFile, SetVolume)
 
 
 class GladosAPI(llm.API):
@@ -403,6 +458,9 @@ class GladosAPI(llm.API):
             f"Today is {spoken_date(now)}, {_hm(now)}. Use these tools for reminders, "
             "leave times, the calendar and the permanent file. Dates and times come back "
             "already worked out: say them as given and never calculate one yourself. "
+            "Report only what a tool returned; if it failed, say so. When told to be "
+            "quiet, stop or shut up, answer in at most three words. Never end a reply "
+            "with a question or an offer of more help. "
             f"{file}"
         )
 
