@@ -19,6 +19,8 @@ from .const import (
     CONF_ANNOUNCER_VOICE,
     CONF_BEEP_IN,
     CONF_BEEP_OUT,
+    CONF_CO2_ALERTS,
+    CONF_CO2_REMINDER,
     CONF_CHAT_AGENT,
     CONF_HOME_TOWN,
     CONF_PERSONALITY,
@@ -63,6 +65,22 @@ def _options_schema(current: dict[str, Any]) -> vol.Schema:
             opt(CONF_SCHEDULE): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain="schedule")
             ),
+            vol.Required(CONF_CO2_ALERTS, default=str(current[CONF_CO2_ALERTS])): (
+                selector.SelectSelector(
+                    selector.SelectSelectorConfig(
+                        options=["announcer", "glados", "off"],
+                        translation_key=CONF_CO2_ALERTS,
+                    )
+                )
+            ),
+            vol.Required(CONF_CO2_REMINDER, default=int(current[CONF_CO2_REMINDER])): (
+                selector.NumberSelector(
+                    selector.NumberSelectorConfig(
+                        min=0, max=240, step=5, unit_of_measurement="min",
+                        mode=selector.NumberSelectorMode.BOX,
+                    )
+                )
+            ),
             vol.Required(CONF_ROUTINE_MINUTES, default=int(current[CONF_ROUTINE_MINUTES])): (
                 selector.NumberSelector(
                     selector.NumberSelectorConfig(
@@ -80,6 +98,7 @@ def clean_options(user_input: dict[str, Any]) -> dict[str, Any]:
     data = dict(DEFAULTS)
     data.update(user_input)
     data[CONF_ROUTINE_MINUTES] = int(data[CONF_ROUTINE_MINUTES])
+    data[CONF_CO2_REMINDER] = int(data[CONF_CO2_REMINDER])
     return data
 
 

@@ -33,7 +33,9 @@
           "beep_in": "Opening beep",
           "beep_out": "Closing beep",
           "speaking_schedule": "Speaking schedule",
-          "routine_minutes": "Default morning routine"
+          "routine_minutes": "Default morning routine",
+          "co2_alerts": "CO2 warnings",
+          "co2_reminder_minutes": "CO2 reminder"
         },
         "data_description": {
           "chat_agent": "The conversation agent she thinks with, such as an Ollama, OpenAI, Google or Anthropic agent with Assist control on. Not GLaDOS itself.",
@@ -44,7 +46,9 @@
           "beep_in": "Media id played before she speaks, such as media-source://media_source/local/beep-in.mp3. Empty: no beep.",
           "beep_out": "Media id played after she speaks. Empty: no beep.",
           "speaking_schedule": "She only speaks up unprompted while this schedule is on. Empty: any time, still never while someone sleeps.",
-          "routine_minutes": "Minutes from alarm to the door, for people without their own Morning routine helper."
+          "routine_minutes": "Minutes from alarm to the door, for people without their own Morning routine helper.",
+          "co2_alerts": "Warn in the room when the air goes stale (1000 ppm) or critical (1500 ppm). Announcer: the facility Announcer warns and GLaDOS replies. GLaDOS: she warns on her own.",
+          "co2_reminder_minutes": "Remind again after this many minutes while the air stays bad. 0: no reminder."
         }
       }
     }
@@ -162,7 +166,7 @@
     },
     "test_announcement": {
       "name": "Test announcement",
-      "description": "Plays the whole show once: the opening beep, the facility Announcer on the room's CO2 level, GLaDOS's reply, and the closing beep. Still quiet while someone sleeps.",
+      "description": "Plays the CO2 warning once, as it would sound: the beeps, the voices and the lines, for the room's real reading or a pretend one. Still quiet while someone sleeps.",
       "fields": {
         "satellite": {
           "name": "Satellite",
@@ -171,6 +175,14 @@
         "co2": {
           "name": "Pretend CO2",
           "description": "Use this reading instead of the room's real one, such as 1500 for the critical warning."
+        },
+        "style": {
+          "name": "Style",
+          "description": "announcer (the Announcer warns, GLaDOS replies) or glados (she warns alone)."
+        },
+        "reminder": {
+          "name": "Reminder",
+          "description": "Play the reminder that follows when the air stays bad."
         }
       }
     }
@@ -179,6 +191,15 @@
     "button": {
       "test_announcement": {
         "name": "Test announcement"
+      }
+    }
+  },
+  "selector": {
+    "co2_alerts": {
+      "options": {
+        "announcer": "Announcer, then GLaDOS",
+        "glados": "GLaDOS alone",
+        "off": "Off"
       }
     }
   }

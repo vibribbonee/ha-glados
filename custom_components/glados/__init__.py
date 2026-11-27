@@ -33,11 +33,14 @@ from homeassistant.core import (
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers import llm
 
+from .air import AirWatch
 from .announce import AnnounceRequest, Announcer
 from .const import (
     ATTR_ANYWHERE,
     ATTR_AREA,
     ATTR_CO2,
+    ATTR_REMINDER,
+    ATTR_STYLE,
     ATTR_FACTS,
     ATTR_GLADOS_AFTER,
     ATTR_IGNORE_SCHEDULE,
@@ -77,6 +80,7 @@ from .people import (
     routine_minutes,
 )
 from .rooms import describe
+from .setpieces import STYLE_ANNOUNCER, STYLE_GLADOS
 from .speech import clean_for_speech
 from .voice import async_say
 
@@ -120,6 +124,8 @@ TEST_SCHEMA = vol.Schema(
     {
         vol.Optional(ATTR_SATELLITE): cv.entity_id,
         vol.Optional(ATTR_CO2): vol.All(vol.Coerce(float), vol.Range(min=0, max=10000)),
+        vol.Optional(ATTR_STYLE, default=STYLE_ANNOUNCER): vol.In([STYLE_ANNOUNCER, STYLE_GLADOS]),
+        vol.Optional(ATTR_REMINDER, default=False): cv.boolean,
     }
 )
 WHO_SCHEMA = vol.Schema({vol.Optional(ATTR_PERSON, default=""): cv.string})
@@ -153,6 +159,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: GladosConfigEntry) -> bo
     entry.runtime_data = GladosData(memory, Announcer(hass, options), options)
     entry.async_on_unload(entry.add_update_listener(_async_reload))
     entry.async_on_unload(llm.async_register_api(hass, GladosAPI(hass, entry.runtime_data)))
+    entry.async_on_unload(AirWatch(hass, entry.runtime_data).start())
 
     def data() -> GladosData:
         return entry.runtime_data
@@ -190,7 +197,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: GladosConfigEntry) -> bo
 
     async def _test(call: ServiceCall) -> ServiceResponse:
         return await data().announcer.async_test(
-            call.data.get(ATTR_SATELLITE), call.context, call.data.get(ATTR_CO2)
+            call.data.get(ATTR_SATELLITE),
+            call.context,
+            call.data.get(ATTR_CO2),
+            call.data[ATTR_STYLE],
+            call.data[ATTR_REMINDER],
         )
 
     async def _who(call: ServiceCall) -> ServiceResponse:

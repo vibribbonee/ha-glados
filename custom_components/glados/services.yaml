@@ -74,6 +74,17 @@ test_announcement:
           max: 10000
           unit_of_measurement: ppm
           mode: box
+    style:
+      default: announcer
+      selector:
+        select:
+          options:
+            - announcer
+            - glados
+    reminder:
+      default: false
+      selector:
+        boolean:
 who:
   fields:
     person:

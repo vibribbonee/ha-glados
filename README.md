@@ -41,6 +41,8 @@ Under **Configure**, all optional:
 | Opening and closing beep: media ids | No beeps |
 | Speaking schedule: a `schedule` entity; she only speaks up unprompted while it's on | Any time |
 | Default morning routine: minutes from alarm to the door | 35 minutes |
+| CO2 warnings: **Announcer, then GLaDOS**, **GLaDOS alone**, or **Off** | Off |
+| CO2 reminder: minutes before she reminds you while the air stays bad | 30 minutes; 0 for no reminder |
 
 Whatever the settings, every reply is cleaned before it's spoken: no emoji, markdown or quotation marks, and units, minus signs and her name are written the way the voice should say them.
 
@@ -51,6 +53,12 @@ The integration doesn't include voice models or game sounds. The GLaDOS and Anno
 - **Piper**: community-trained GLaDOS voices for Piper exist. Put the `.onnx` file and its `.onnx.json` in the Piper app's custom voices folder, restart Piper, and pick the voice in your voice assistant. Check each voice's license before you use it.
 - **The facility Announcer** (optional): add a second Piper voice in the same way, then enter it under **Configure → Announcer voice**, for example `tts.piper:announcer`.
 - **Beeps** (optional): put your own sound files in the media folder and enter them as `media-source://media_source/local/<file>`.
+
+## CO2 warnings
+
+Every room with a CO2 sensor is checked each minute. When the air goes stale (1000 ppm) or critical (1500 ppm) and someone is in the room, she warns there, once. While it stays bad she reminds you after the reminder time. When it's fresh again, she forgets it, quietly. She never warns while someone sleeps, on Do Not Disturb or during a video.
+
+With **Announcer, then GLaDOS**, the facility Announcer reads the warning and GLaDOS remarks on it. With **GLaDOS alone**, she gives the warning herself. The lines are written out rather than improvised, so a real warning is never softened. Try them with the **Test announcement** button, or with `glados.test_announcement` and a pretend `co2` reading.
 
 ## How she finds things
 

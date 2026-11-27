@@ -31,7 +31,7 @@ from .const import (
 )
 from .registry import area_of, area_name, label_entities
 from .rooms import RoomContext, describe
-from .setpieces import CO2_CRITICAL, co2_announcement
+from .setpieces import CO2_CRITICAL, STYLE_ANNOUNCER
 from .speech import clean_for_speech
 from .voice import async_say
 
@@ -48,7 +48,7 @@ class AnnounceRequest:
     voice: str = "glados"
     glados_after: str = ""
     satellite: str | None = None  # speak on this one, whatever room it is in
-    glados_line: str = ""  # a fixed GLaDOS reply after the Announcer (set pieces)
+    glados_line: str = ""  # a fixed GLaDOS line: after the Announcer, or on her own
 
 
 def blocked_reason(ctx: RoomContext, ignore_schedule: bool, anywhere: bool) -> str:
@@ -140,6 +140,10 @@ class Announcer:
                 await self._play(satellite, message=line, **chime)
             if after:
                 await self._play(satellite, message=after, preannounce=False)
+        elif after:
+            # A fixed GLaDOS line on her own (a set piece): spoken as written.
+            line, after = after, ""
+            await self._play(satellite, message=line, **chime)
         else:
             who = (
                 f"The person in the room is {ctx.people[0]}. "
@@ -164,24 +168,19 @@ class Announcer:
         satellite: str | None = None,
         context: Context | None = None,
         co2: float | None = None,
+        style: str = STYLE_ANNOUNCER,
+        reminder: bool = False,
     ) -> dict[str, Any]:
-        """The whole show once: beep, the Announcer, GLaDOS, beep.
+        """The CO2 warning once, as it would sound: beeps, the voices, the lines.
 
         Uses the room's real CO2 reading unless co2 pretends another one.
         """
+        from .air import co2_request  # air imports this module
+
         area = area_of(self.hass, satellite) if satellite else None
         ctx = describe(self.hass, area, None)
         room = area_name(self.hass, ctx.area) if ctx.area else "facility"
         ppm = co2 if co2 is not None else (ctx.co2 or CO2_CRITICAL)
-        announcer, glados = co2_announcement(room, ppm)
-        return await self.async_announce(
-            AnnounceRequest(
-                facts=announcer,
-                voice=VOICE_ANNOUNCER,
-                area=ctx.area,
-                satellite=satellite,
-                ignore_schedule=True,
-                glados_line=glados,
-            ),
-            context,
-        )
+        req = co2_request(style, ctx.area, room, ppm, reminder, satellite)
+        req.ignore_schedule = True
+        return await self.async_announce(req, context)

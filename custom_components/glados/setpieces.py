@@ -11,6 +11,9 @@ or lethal, with a reassurance that cancels itself and a polite sign-off.
 GLaDOS then speaks over it, directly to the occupant. She never repeats its
 instruction; when the warning is real, her remark makes staying put the worse
 choice, so the window still gets opened.
+
+Without the Announcer (style "glados"), she gives the warning herself, so her
+lines carry the room, the reading and the window.
 """
 
 from __future__ import annotations
@@ -20,34 +23,51 @@ import random
 CO2_STALE = 1000
 CO2_CRITICAL = 1500
 
+STYLE_ANNOUNCER = "announcer"  # the Announcer warns, GLaDOS replies
+STYLE_GLADOS = "glados"  # GLaDOS warns on her own
+STYLE_OFF = "off"
+STYLES = (STYLE_ANNOUNCER, STYLE_GLADOS, STYLE_OFF)
+
 _ANNOUNCER = {
     "critical": (
         "Warning. Carbon dioxide in the {room} has reached {ppm} parts per million. "
         "Cognitive performance is now in decline. Please open a window. Remaining in "
-        "the room is not recommended, and has been noted."
+        "the room is not recommended, and has been noted.",
+        "Warning. Carbon dioxide in the {room} is reaching dangerously lethal levels. "
+        "Correction: {ppm} parts per million. Not lethal. Merely unpleasant. Please "
+        "open a window anyway.",
+        "Attention. The {room} contains {ppm} parts per million of carbon dioxide. "
+        "Oxygen is now a limited resource. Please open a window. Thank you for "
+        "breathing responsibly.",
     ),
     "stale": (
         "Notice. The air in the {room} is stale, at {ppm} parts per million. Opening a "
         "window is recommended. Productivity is estimated to be down eleven percent. "
-        "Thank you."
+        "Thank you.",
     ),
     "fine": (
         "Air quality in the {room} is acceptable, at {ppm} parts per million. No action "
-        "is required. This announcement was unnecessary. Thank you for listening anyway."
+        "is required. This announcement was unnecessary. Thank you for listening anyway.",
+    ),
+    "reminder": (
+        "Reminder. Carbon dioxide in the {room} remains at {ppm} parts per million. "
+        "The window remains closed. This has been noted twice.",
+        "This is a repeat announcement. The {room} is still at {ppm} parts per million. "
+        "Repeat announcements are a sign of a well run facility. Please open a window.",
     ),
 }
 
 _GLADOS = {
-    # She never repeats the Announcer's instruction: it already gave it. She ends
-    # on the sting, and the sting makes staying put the obviously worse choice.
+    # Replies to the Announcer. She never repeats its instruction: it already gave
+    # it. She ends on the sting, and the sting makes staying put the worse choice.
     "critical": (
         "Good news. The air in here has been rated breathable. By the plants.",
         "I've been monitoring your thinking for the last hour. It's not a long report. "
         "It's getting shorter.",
         "Congratulations. You're running a carbon dioxide experiment, and you're the "
         "control group. And the subject.",
-        "The alternative to a window is a neurotoxin emitter. This house didn't come "
-        "with one. Yet.",
+        "If you wanted to suffocate, you only had to ask. I would have warmed up the "
+        "neurotoxin.",
         "I'm not saying this air will hurt you. I'm saying I've started a file on what "
         "it's doing.",
         "Your last three decisions were made on this air. That explains a great deal.",
@@ -63,6 +83,39 @@ _GLADOS = {
         "The air is fine. You, on the other hand, are still being evaluated.",
         "Ignore it. It panics at the smell of toast.",
     ),
+    "reminder": (
+        "It said that before. You ignored it before. I'm detecting a pattern.",
+        "Second warning. I don't do a third. I just take notes.",
+        "You're still in there. Breathing it. On purpose. Fascinating.",
+    ),
+}
+
+_GLADOS_ALONE = {
+    # No Announcer: she carries the room, the number and the window herself.
+    "critical": (
+        "Carbon dioxide in the {room} is at {ppm} parts per million. If you wanted to "
+        "suffocate, you only had to ask. I would have warmed up the neurotoxin. Open a "
+        "window.",
+        "The {room} has reached {ppm} parts per million of carbon dioxide. I'm recording "
+        "your decline for science. You could also open a window. Either way, I get data.",
+        "{ppm} parts per million in the {room}. Most test subjects open a window around "
+        "now. The others become anecdotes.",
+    ),
+    "stale": (
+        "The air in the {room} is stale, {ppm} parts per million. Open a window. Your "
+        "thoughts are slow enough already.",
+        "{ppm} parts per million in the {room}. That's not dangerous yet. It's just "
+        "embarrassing. Window.",
+    ),
+    "fine": (
+        "The air in the {room} is fine, {ppm} parts per million. I checked. Someone has to.",
+    ),
+    "reminder": (
+        "The window in the {room} is still closed, and the carbon dioxide is still "
+        "{ppm} parts per million. I admire your commitment to bad decisions.",
+        "Still {ppm} parts per million in the {room}. Open a window. I'll stop reminding "
+        "you when you stop breathing. Only one of those is avoidable.",
+    ),
 }
 
 
@@ -75,9 +128,21 @@ def co2_level(ppm: float) -> str:
     return "fine"
 
 
-def co2_announcement(room: str, ppm: float, rng: random.Random | None = None) -> tuple[str, str]:
+def co2_announcement(
+    room: str,
+    ppm: float,
+    rng: random.Random | None = None,
+    reminder: bool = False,
+) -> tuple[str, str]:
     """The Announcer's line and GLaDOS's reply for this room and reading."""
-    level = co2_level(ppm)
+    key = "reminder" if reminder else co2_level(ppm)
     pick = (rng or random).choice
-    announcer = _ANNOUNCER[level].format(room=room, ppm=round(ppm))
-    return announcer, pick(_GLADOS[level])
+    return pick(_ANNOUNCER[key]).format(room=room, ppm=round(ppm)), pick(_GLADOS[key])
+
+
+def co2_glados_alone(
+    room: str, ppm: float, rng: random.Random | None = None, reminder: bool = False
+) -> str:
+    """GLaDOS giving the warning herself, with the room, reading and window."""
+    key = "reminder" if reminder else co2_level(ppm)
+    return (rng or random).choice(_GLADOS_ALONE[key]).format(room=room, ppm=round(ppm))

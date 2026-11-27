@@ -29,6 +29,8 @@ ATTR_VALUE = "value"
 ATTR_PERSON = "person"
 ATTR_SATELLITE = "satellite"
 ATTR_CO2 = "co2"
+ATTR_STYLE = "style"
+ATTR_REMINDER = "reminder"
 
 VOICE_GLADOS = "glados"
 VOICE_ANNOUNCER = "announcer"
@@ -43,6 +45,8 @@ CONF_BEEP_IN = "beep_in"
 CONF_BEEP_OUT = "beep_out"
 CONF_SCHEDULE = "speaking_schedule"  # a schedule entity; empty: any time
 CONF_ROUTINE_MINUTES = "routine_minutes"
+CONF_CO2_ALERTS = "co2_alerts"  # announcer, glados or off
+CONF_CO2_REMINDER = "co2_reminder_minutes"  # 0: no reminder
 
 DEFAULTS: dict[str, str | int | bool] = {
     CONF_CHAT_AGENT: "",
@@ -54,6 +58,8 @@ DEFAULTS: dict[str, str | int | bool] = {
     CONF_BEEP_OUT: "",
     CONF_SCHEDULE: "",
     CONF_ROUTINE_MINUTES: 35,
+    CONF_CO2_ALERTS: "off",
+    CONF_CO2_REMINDER: 30,
 }
 
 # Labels people put on their own devices
