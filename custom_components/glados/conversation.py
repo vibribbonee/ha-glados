@@ -1,10 +1,11 @@
-"""GLaDOS as a conversation agent: the chat agent's reply, cleaned for speech.
+"""GLaDOS as a conversation agent: any chat agent, in her character, cleaned for speech.
 
 Pick "GLaDOS" as the pipeline's conversation agent. Every sentence goes to the
-chat agent set in the options (the Ollama "GLaDOS Extended" agent by default),
+chat agent set in the options (any LLM agent: Ollama, OpenAI, Google, Anthropic),
 with its conversation id, device and satellite, so tools, history and timers
-keep working. Only the spoken reply changes: emoji, markdown, quotes, units and
-minus signs go through the same cleanup as her announcements.
+keep working. With "Add her personality" on, her persona travels along as the
+extra system prompt. The spoken reply goes through the same cleanup as her
+announcements: emoji, markdown, quotes, units and minus signs.
 """
 
 from __future__ import annotations
@@ -18,7 +19,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import intent
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .const import CONF_CHAT_AGENT, DEFAULTS, DOMAIN
+from .const import CONF_CHAT_AGENT, CONF_HOME_TOWN, CONF_PERSONALITY, DEFAULTS, DOMAIN
+from .prompts import persona
 from .speech import clean_for_speech
 
 
@@ -62,19 +64,34 @@ class GladosAgent(conversation.ConversationEntity):
         return "*"
 
     @property
-    def chat_agent(self) -> str:
-        return str({**DEFAULTS, **self._entry.options}[CONF_CHAT_AGENT])
+    def options(self) -> dict:
+        return {**DEFAULTS, **self._entry.options}
+
+    def _error(self, user_input: ConversationInput, text: str) -> ConversationResult:
+        response = intent.IntentResponse(language=user_input.language)
+        response.async_set_error(intent.IntentResponseErrorCode.UNKNOWN, text)
+        return ConversationResult(response, user_input.conversation_id)
+
+    def _instructions(self, user_input: ConversationInput) -> str | None:
+        opts = self.options
+        parts = [
+            persona(self.hass, str(opts[CONF_HOME_TOWN] or "")) if opts[CONF_PERSONALITY] else "",
+            user_input.extra_system_prompt or "",
+        ]
+        return "\n\n".join(p for p in parts if p) or None
 
     async def async_process(self, user_input: ConversationInput) -> ConversationResult:
         """Ask the chat agent, then clean what she says."""
-        agent = self.chat_agent
+        agent = str(self.options[CONF_CHAT_AGENT] or "")
+        if not agent:
+            return self._error(
+                user_input, "I have no brain. Pick a chat agent under Configure."
+            )
         if agent == self.entity_id:
-            response = intent.IntentResponse(language=user_input.language)
-            response.async_set_error(
-                intent.IntentResponseErrorCode.UNKNOWN,
+            return self._error(
+                user_input,
                 "My chat agent is set to myself. Pick another one under Configure.",
             )
-            return ConversationResult(response, user_input.conversation_id)
         result = await conversation.async_converse(
             self.hass,
             user_input.text,
@@ -84,6 +101,6 @@ class GladosAgent(conversation.ConversationEntity):
             agent_id=agent,
             device_id=user_input.device_id,
             satellite_id=user_input.satellite_id,
-            extra_system_prompt=user_input.extra_system_prompt,
+            extra_system_prompt=self._instructions(user_input),
         )
         return clean_result(result)

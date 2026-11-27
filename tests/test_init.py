@@ -58,6 +58,8 @@ async def test_options_flow(home: Home) -> None:
     result = await hass.config_entries.options.async_configure(
         flow["flow_id"],
         {
+            "chat_agent": "conversation.chat",
+            "personality": False,
             "voice_agent": "conversation.glados_voice",
             "announcer_voice": "tts.piper_2:announcer",
             "beep_in": "",
@@ -74,5 +76,10 @@ async def test_options_flow(home: Home) -> None:
 async def test_user_flow(hass: HomeAssistant) -> None:
     assert await async_setup_component(hass, "homeassistant", {})
     result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": "user"})
-    result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"chat_agent": "conversation.chat", "personality": True}
+    )
     assert result["type"] == "create_entry"
+    options = result["result"].options
+    assert options["chat_agent"] == "conversation.chat" and options["personality"]
+    assert options["announcer_voice"] == "" and options["speaking_schedule"] == ""

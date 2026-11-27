@@ -9,16 +9,25 @@ from custom_components.glados.announce import (
     Announcer,
     announcer_media_id,
 )
-from custom_components.glados.const import DEFAULTS
 
 from pytest_homeassistant_custom_component.common import async_mock_service
 
 from .conftest import Home
 
 
-def _announcer(home: Home) -> tuple[Announcer, list]:
+FULL = {
+    "chat_agent": "conversation.chat",
+    "voice_agent": "conversation.voice",
+    "announcer_voice": "tts.piper_2:announcer",
+    "beep_in": "media-source://media_source/local/beep-in.mp3",
+    "beep_out": "media-source://media_source/local/beep-out.mp3",
+    "speaking_schedule": "schedule.glados_may_speak_up",
+}
+
+
+def _announcer(home: Home, options: dict | None = None) -> tuple[Announcer, list]:
     calls = async_mock_service(home.hass, "assist_satellite", "announce")
-    return Announcer(home.hass, {}), calls
+    return Announcer(home.hass, FULL if options is None else options), calls
 
 
 async def test_media_id_for_the_announcer_voice() -> None:
@@ -39,9 +48,9 @@ async def test_announcer_reads_facts_with_beeps(home: Home) -> None:
     assert first["entity_id"] == "assist_satellite.puck_3"
     assert first["media_id"].startswith("media-source://tts/tts.piper_2?message=Departure")
     assert first["preannounce"] is True
-    assert first["preannounce_media_id"] == DEFAULTS["beep_in"]
+    assert first["preannounce_media_id"] == FULL["beep_in"]
     assert last == {"entity_id": "assist_satellite.puck_3",
-                    "media_id": DEFAULTS["beep_out"], "preannounce": False}
+                    "media_id": FULL["beep_out"], "preannounce": False}
 
 
 async def test_own_chime_gets_no_beeps(home: Home) -> None:
@@ -110,3 +119,17 @@ async def test_uses_another_room_only_when_allowed(home: Home) -> None:
     result = await announcer.async_announce(AnnounceRequest(facts="x", voice="announcer"))
     assert result["spoken"]
     assert calls[0].data["entity_id"] == "assist_satellite.office_puck"
+
+
+async def test_bare_install_uses_her_own_voice_and_no_beeps(home: Home) -> None:
+    # No Announcer voice, no beeps, no schedule: the satellite reads the notice.
+    home.hass.states.async_set("schedule.glados_may_speak_up", "off")
+    announcer, calls = _announcer(home, {})
+    result = await announcer.async_announce(
+        AnnounceRequest(facts="Departure in fifteen minutes.", voice="announcer")
+    )
+    assert result["spoken"]
+    assert [c.data for c in calls] == [
+        {"entity_id": "assist_satellite.puck_3",
+         "message": "Departure in fifteen minutes.", "preannounce": False}
+    ]

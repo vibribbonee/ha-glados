@@ -46,7 +46,6 @@ from .const import (
     ATTR_VOICE,
     CONF_ROUTINE_MINUTES,
     CONF_SCHEDULE,
-    CONF_VOICE_AGENT,
     DEFAULTS,
     DOMAIN,
     SERVICE_ANNOUNCE,
@@ -148,7 +147,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: GladosConfigEntry) -> bo
     async def _say(call: ServiceCall) -> ServiceResponse:
         speech = await async_say(
             hass,
-            str(data().options[CONF_VOICE_AGENT]),
+            data().options,
             call.data[ATTR_FACTS],
             call.data[ATTR_REQUEST],
             call.data[ATTR_TASK],
@@ -157,7 +156,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: GladosConfigEntry) -> bo
         return {"speech": speech}
 
     async def _room_context(call: ServiceCall) -> ServiceResponse:
-        ctx = describe(hass, call.data[ATTR_AREA] or None, str(data().options[CONF_SCHEDULE]))
+        ctx = describe(hass, call.data[ATTR_AREA] or None, str(data().options[CONF_SCHEDULE] or "") or None)
         return ctx.as_dict()
 
     async def _announce(call: ServiceCall) -> ServiceResponse:

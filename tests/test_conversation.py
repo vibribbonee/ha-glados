@@ -35,14 +35,14 @@ class FakeChat(conversation.AbstractConversationAgent):
         )
 
 
-async def _setup(hass: HomeAssistant, chat: str | None) -> FakeChat:
+async def _setup(hass: HomeAssistant, chat: str | None, **options) -> FakeChat:
     assert await async_setup_component(hass, "homeassistant", {})
     assert await async_setup_component(hass, "conversation", {})
     fake = FakeChat()
     chat_entry = MockConfigEntry(domain="fake_chat")
     chat_entry.add_to_hass(hass)
     conversation.async_set_agent(hass, chat_entry, fake)
-    options = {"chat_agent": chat or chat_entry.entry_id}
+    options = {"chat_agent": chat or chat_entry.entry_id, **options}
     entry = MockConfigEntry(domain=DOMAIN, title="GLaDOS", options=options)
     entry.add_to_hass(hass)
     assert await hass.config_entries.async_setup(entry.entry_id)
@@ -71,6 +71,24 @@ async def test_reply_is_cleaned(hass: HomeAssistant) -> None:
     sent = fake.seen[0]
     assert sent.text == "how cold is it" and sent.conversation_id == "abc"
     assert sent.device_id == "puck" and sent.satellite_id == "assist_satellite.puck_3"
+
+
+async def test_personality_travels_along(hass: HomeAssistant) -> None:
+    hass.states.async_set("person.ada", "home", {"friendly_name": "ada"})
+    fake = await _setup(hass, None, home_town="Delft")
+    await conversation.async_converse(
+        hass, "who are you", None, Context(), agent_id="conversation.glados"
+    )
+    prompt = fake.seen[0].extra_system_prompt
+    assert "Glad-oss" in prompt and "in Delft" in prompt and "occupant is Ada" in prompt
+
+
+async def test_personality_off(hass: HomeAssistant) -> None:
+    fake = await _setup(hass, None, personality=False)
+    await conversation.async_converse(
+        hass, "hello", None, Context(), agent_id="conversation.glados"
+    )
+    assert fake.seen[0].extra_system_prompt is None
 
 
 async def test_never_calls_itself(hass: HomeAssistant) -> None:

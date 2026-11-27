@@ -30,22 +30,26 @@ ATTR_PERSON = "person"
 VOICE_GLADOS = "glados"
 VOICE_ANNOUNCER = "announcer"
 
-# Options (with their defaults, matching the helpers the scripts use today)
-CONF_CHAT_AGENT = "chat_agent"
-CONF_VOICE_AGENT = "voice_agent"
-CONF_ANNOUNCER_VOICE = "announcer_voice"  # "tts.engine:voice"
+# Options. Every one may be empty, so any home can start with only a chat agent.
+CONF_CHAT_AGENT = "chat_agent"  # answers when you talk to her
+CONF_PERSONALITY = "personality"  # send her persona as an extra system prompt
+CONF_HOME_TOWN = "home_town"
+CONF_VOICE_AGENT = "voice_agent"  # rewrites announcements; empty: the chat agent
+CONF_ANNOUNCER_VOICE = "announcer_voice"  # "tts.engine:voice"; empty: her own voice
 CONF_BEEP_IN = "beep_in"
 CONF_BEEP_OUT = "beep_out"
-CONF_SCHEDULE = "speaking_schedule"
+CONF_SCHEDULE = "speaking_schedule"  # a schedule entity; empty: any time
 CONF_ROUTINE_MINUTES = "routine_minutes"
 
-DEFAULTS: dict[str, str | int] = {
-    CONF_CHAT_AGENT: "conversation.glados_extended",
-    CONF_VOICE_AGENT: "conversation.glados_voice",
-    CONF_ANNOUNCER_VOICE: "tts.piper_2:announcer",
-    CONF_BEEP_IN: "media-source://media_source/local/portal-2-beep-in.mp3",
-    CONF_BEEP_OUT: "media-source://media_source/local/beep-out.mp3",
-    CONF_SCHEDULE: "schedule.glados_may_speak_up",
+DEFAULTS: dict[str, str | int | bool] = {
+    CONF_CHAT_AGENT: "",
+    CONF_PERSONALITY: True,
+    CONF_HOME_TOWN: "",
+    CONF_VOICE_AGENT: "",
+    CONF_ANNOUNCER_VOICE: "",
+    CONF_BEEP_IN: "",
+    CONF_BEEP_OUT: "",
+    CONF_SCHEDULE: "",
     CONF_ROUTINE_MINUTES: 35,
 }
 

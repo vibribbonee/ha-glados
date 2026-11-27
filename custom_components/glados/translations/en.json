@@ -3,7 +3,17 @@
     "step": {
       "user": {
         "title": "GLaDOS",
-        "description": "Add GLaDOS to this home. She will be unbearable about it. Voices, sounds and the speaking schedule can be changed afterwards under Configure."
+        "description": "Add GLaDOS to this home. She will be unbearable about it.\n\nPick the chat agent she thinks with. Voices, sounds and the speaking schedule are under Configure afterwards. Then choose GLaDOS as the conversation agent of your voice assistant.",
+        "data": {
+          "chat_agent": "Chat agent",
+          "personality": "Add her personality",
+          "home_town": "Home town"
+        },
+        "data_description": {
+          "chat_agent": "The conversation agent she thinks with, such as an Ollama, OpenAI, Google or Anthropic agent with Assist control on. Not GLaDOS itself.",
+          "personality": "Sends her GLaDOS persona along with every request. Turn it off only if the chat agent's own prompt already makes it GLaDOS.",
+          "home_town": "Where the house is, for her remarks and local searches. Optional."
+        }
       }
     },
     "abort": {
@@ -15,16 +25,25 @@
       "init": {
         "title": "GLaDOS",
         "data": {
-          "chat_agent": "Chat agent (answers when you talk to her)",
-          "voice_agent": "Voice agent (rewrites facts in her voice)",
-          "announcer_voice": "Announcer voice (tts.engine:voice)",
-          "beep_in": "Opening beep (media id)",
-          "beep_out": "Closing beep (media id)",
+          "chat_agent": "Chat agent",
+          "personality": "Add her personality",
+          "home_town": "Home town",
+          "voice_agent": "Voice agent",
+          "announcer_voice": "Announcer voice",
+          "beep_in": "Opening beep",
+          "beep_out": "Closing beep",
           "speaking_schedule": "Speaking schedule",
           "routine_minutes": "Default morning routine"
         },
         "data_description": {
-          "chat_agent": "The GLaDOS agent passes each sentence to this agent and cleans its reply for speech. Not GLaDOS itself.",
+          "chat_agent": "The conversation agent she thinks with, such as an Ollama, OpenAI, Google or Anthropic agent with Assist control on. Not GLaDOS itself.",
+          "personality": "Sends her GLaDOS persona along with every request. Turn it off only if the chat agent's own prompt already makes it GLaDOS.",
+          "home_town": "Where the house is, for her remarks and local searches. Optional.",
+          "voice_agent": "A separate agent that rewrites announcements in her voice. Empty: the chat agent does it.",
+          "announcer_voice": "The facility Announcer's text-to-speech voice, as engine:voice, such as tts.piper:announcer. Empty: her own voice reads the notices.",
+          "beep_in": "Media id played before she speaks, such as media-source://media_source/local/beep-in.mp3. Empty: no beep.",
+          "beep_out": "Media id played after she speaks. Empty: no beep.",
+          "speaking_schedule": "She only speaks up unprompted while this schedule is on. Empty: any time, still never while someone sleeps.",
           "routine_minutes": "Minutes from alarm to the door, for people without their own Morning routine helper."
         }
       }

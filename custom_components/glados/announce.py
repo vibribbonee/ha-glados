@@ -25,7 +25,6 @@ from .const import (
     CONF_BEEP_IN,
     CONF_BEEP_OUT,
     CONF_SCHEDULE,
-    CONF_VOICE_AGENT,
     DEFAULTS,
     LABEL_OWN_CHIME,
     VOICE_ANNOUNCER,
@@ -99,7 +98,7 @@ class Announcer:
         self, req: AnnounceRequest, context: Context | None = None
     ) -> dict[str, Any]:
         """Announce, or explain why not."""
-        ctx = describe(self.hass, req.area, self.options[CONF_SCHEDULE])
+        ctx = describe(self.hass, req.area, str(self.options[CONF_SCHEDULE] or "") or None)
         reason = blocked_reason(ctx, req.ignore_schedule, req.anywhere)
         if reason:
             return {"spoken": False, "reason": reason, "speech": "", "area": ctx.area}
@@ -108,22 +107,24 @@ class Announcer:
         own_chime = satellite in label_entities(self.hass, LABEL_OWN_CHIME)
         beep_in = str(self.options[CONF_BEEP_IN] or "")
         beep_out = str(self.options[CONF_BEEP_OUT] or "")
-        agent = str(self.options[CONF_VOICE_AGENT])
         chime = {"preannounce": not own_chime and bool(beep_in)}
         if chime["preannounce"]:
             chime["preannounce_media_id"] = beep_in
 
         if req.voice == VOICE_ANNOUNCER:
             line = clean_for_speech(req.facts)
-            await self._play(
-                satellite,
-                media_id=announcer_media_id(str(self.options[CONF_ANNOUNCER_VOICE]), line),
-                **chime,
-            )
+            announcer = str(self.options[CONF_ANNOUNCER_VOICE] or "")
+            if announcer:
+                await self._play(
+                    satellite, media_id=announcer_media_id(announcer, line), **chime
+                )
+            else:
+                # No Announcer voice set up: the satellite's own voice reads it.
+                await self._play(satellite, message=line, **chime)
             if req.glados_after:
                 after = await async_say(
                     self.hass,
-                    agent,
+                    self.options,
                     req.facts,
                     task=(
                         "The facility Announcer just said this. You chime in right "
@@ -141,7 +142,7 @@ class Announcer:
             )
             line = await async_say(
                 self.hass,
-                agent,
+                self.options,
                 req.facts,
                 task=f"Unprompted announcement. {who}{req.task}".strip(),
                 context=context,

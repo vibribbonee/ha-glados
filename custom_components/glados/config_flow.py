@@ -1,4 +1,4 @@
-"""Config flow for GLaDOS: one entry, with the voices and sounds as options."""
+"""Config flow for GLaDOS: pick her brain at setup, tune voices and sounds later."""
 
 from __future__ import annotations
 
@@ -17,9 +17,11 @@ from homeassistant.helpers import selector
 
 from .const import (
     CONF_ANNOUNCER_VOICE,
-    CONF_CHAT_AGENT,
     CONF_BEEP_IN,
     CONF_BEEP_OUT,
+    CONF_CHAT_AGENT,
+    CONF_HOME_TOWN,
+    CONF_PERSONALITY,
     CONF_ROUTINE_MINUTES,
     CONF_SCHEDULE,
     CONF_VOICE_AGENT,
@@ -27,26 +29,41 @@ from .const import (
     DOMAIN,
 )
 
+AGENT = selector.EntitySelector(selector.EntitySelectorConfig(domain="conversation"))
+TEXT = selector.TextSelector()
 
-def _schema(values: dict[str, Any]) -> vol.Schema:
-    current = {**DEFAULTS, **values}
+
+def _suggested(key: str, current: dict[str, Any]) -> dict[str, Any] | None:
+    value = current.get(key)
+    return {"suggested_value": value} if value else None
+
+
+def _setup_schema(current: dict[str, Any]) -> vol.Schema:
     return vol.Schema(
         {
-            vol.Required(CONF_CHAT_AGENT, default=current[CONF_CHAT_AGENT]): (
-                selector.EntitySelector(selector.EntitySelectorConfig(domain="conversation"))
+            vol.Required(CONF_CHAT_AGENT, description=_suggested(CONF_CHAT_AGENT, current)): AGENT,
+            vol.Required(CONF_PERSONALITY, default=bool(current[CONF_PERSONALITY])): (
+                selector.BooleanSelector()
             ),
-            vol.Required(CONF_VOICE_AGENT, default=current[CONF_VOICE_AGENT]): (
-                selector.EntitySelector(selector.EntitySelectorConfig(domain="conversation"))
+            vol.Optional(CONF_HOME_TOWN, description=_suggested(CONF_HOME_TOWN, current)): TEXT,
+        }
+    )
+
+
+def _options_schema(current: dict[str, Any]) -> vol.Schema:
+    def opt(key: str) -> vol.Optional:
+        return vol.Optional(key, description=_suggested(key, current))
+
+    return _setup_schema(current).extend(
+        {
+            opt(CONF_VOICE_AGENT): AGENT,
+            opt(CONF_ANNOUNCER_VOICE): TEXT,
+            opt(CONF_BEEP_IN): TEXT,
+            opt(CONF_BEEP_OUT): TEXT,
+            opt(CONF_SCHEDULE): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="schedule")
             ),
-            vol.Required(CONF_ANNOUNCER_VOICE, default=current[CONF_ANNOUNCER_VOICE]): (
-                selector.TextSelector()
-            ),
-            vol.Optional(CONF_BEEP_IN, default=current[CONF_BEEP_IN]): selector.TextSelector(),
-            vol.Optional(CONF_BEEP_OUT, default=current[CONF_BEEP_OUT]): selector.TextSelector(),
-            vol.Required(CONF_SCHEDULE, default=current[CONF_SCHEDULE]): (
-                selector.EntitySelector(selector.EntitySelectorConfig(domain="schedule"))
-            ),
-            vol.Required(CONF_ROUTINE_MINUTES, default=current[CONF_ROUTINE_MINUTES]): (
+            vol.Required(CONF_ROUTINE_MINUTES, default=int(current[CONF_ROUTINE_MINUTES])): (
                 selector.NumberSelector(
                     selector.NumberSelectorConfig(
                         min=5, max=180, step=5, unit_of_measurement="min",
@@ -58,6 +75,14 @@ def _schema(values: dict[str, Any]) -> vol.Schema:
     )
 
 
+def clean_options(user_input: dict[str, Any]) -> dict[str, Any]:
+    """Every option stored; a text field the form left out was cleared."""
+    data = dict(DEFAULTS)
+    data.update(user_input)
+    data[CONF_ROUTINE_MINUTES] = int(data[CONF_ROUTINE_MINUTES])
+    return data
+
+
 class GladosConfigFlow(ConfigFlow, domain=DOMAIN):
     """Set up GLaDOS. There is one per Home Assistant."""
 
@@ -66,28 +91,28 @@ class GladosConfigFlow(ConfigFlow, domain=DOMAIN):
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Create the entry with the defaults; change them under Configure."""
+        """Pick the chat agent she thinks with."""
         if user_input is not None:
-            return self.async_create_entry(title="GLaDOS", data={})
-        return self.async_show_form(step_id="user")
+            return self.async_create_entry(
+                title="GLaDOS", data={}, options=clean_options(user_input)
+            )
+        return self.async_show_form(step_id="user", data_schema=_setup_schema(dict(DEFAULTS)))
 
     @staticmethod
     @callback
     def async_get_options_flow(config_entry: ConfigEntry) -> OptionsFlow:
-        """Voices, sounds, schedule."""
+        """Agents, voices, sounds, schedule."""
         return GladosOptionsFlow()
 
 
 class GladosOptionsFlow(OptionsFlow):
-    """Change voices, sounds and the speaking schedule."""
+    """Change her agents, voices, sounds and speaking schedule."""
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """One form with every option."""
         if user_input is not None:
-            user_input[CONF_ROUTINE_MINUTES] = int(user_input[CONF_ROUTINE_MINUTES])
-            return self.async_create_entry(data=user_input)
-        return self.async_show_form(
-            step_id="init", data_schema=_schema(dict(self.config_entry.options))
-        )
+            return self.async_create_entry(data=clean_options(user_input))
+        current = {**DEFAULTS, **self.config_entry.options}
+        return self.async_show_form(step_id="init", data_schema=_options_schema(current))

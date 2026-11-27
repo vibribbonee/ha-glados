@@ -19,7 +19,9 @@ It provides these services:
 
 It also adds a **GLaDOS conversation agent**. Pick it as the pipeline's agent: it passes every sentence to the chat agent (GLaDOS Extended), with the conversation, device and satellite, and cleans the reply for speech. This is the reply cleanup from phase 2, without waiting for her own LLM API. The one cost is that the reply is no longer streamed to the voice, so a long answer starts speaking a moment later.
 
-Its settings screen holds the chat agent, the voice agent, the Announcer voice, the beeps, the speaking schedule and the default routine length.
+Since 0.2.0 it works in any home. Setup only asks for a chat agent; every other setting may stay empty. Her personality ships with the integration (`prompts.py`) and travels along as the extra system prompt, so any LLM agent becomes GLaDOS. Without an Announcer voice, her own voice reads the notices; without a schedule, she may speak up any time.
+
+Its settings screen holds the chat agent, the personality switch, the home town, the voice agent, the Announcer voice, the beeps, the speaking schedule and the default routine length.
 
 Next:
 

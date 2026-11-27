@@ -210,8 +210,8 @@ def describe(
             or _device_class(s) == "tv"
         )
     )
-    if schedule:
-        ctx.may_speak = hass.states.is_state(schedule, STATE_ON)
+    # No schedule set up: she may speak up any time (sleep rules still apply).
+    ctx.may_speak = hass.states.is_state(schedule, STATE_ON) if schedule else True
 
     # Climate
     ctx.temperature = _sensor_value(hass, ents, "temperature", glados)
