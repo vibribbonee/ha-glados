@@ -39,6 +39,7 @@ from homeassistant.util.hass_dict import HassKey
 from .announce import AnnounceRequest
 from .const import DOMAIN, VOICE_ANNOUNCER, VOICE_GLADOS
 from .dates import days_away, parse_time, resolve_date, resolve_moment, spoken_date
+from .people import Person, people_home, person_area, phones
 from .speech import clean_for_speech
 
 if TYPE_CHECKING:
@@ -51,6 +52,7 @@ __all__ = [
     "Addon",
     "AnnounceRequest",
     "GladosTool",
+    "Person",
     "VOICE_ANNOUNCER",
     "VOICE_GLADOS",
     "async_announce",
@@ -59,6 +61,9 @@ __all__ = [
     "days_away",
     "glados_data",
     "parse_time",
+    "people_home",
+    "person_area",
+    "phones",
     "registered_addons",
     "resolve_date",
     "resolve_moment",
