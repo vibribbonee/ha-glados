@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 from unittest.mock import AsyncMock, patch
 
 from custom_components.glados.announce import (
@@ -153,9 +155,10 @@ async def test_the_test_announcement(home: Home) -> None:
 def test_glados_backs_up_a_real_warning() -> None:
     from custom_components.glados.setpieces import _GLADOS, co2_announcement, co2_level
     assert [co2_level(x) for x in (700, 1200, 1500)] == ["fine", "stale", "critical"]
-    # Every critical and stale reply tells them to open the window.
+    # When the warning is real, she never talks them out of it, and she leaves
+    # the instruction to the Announcer.
     for level in ("critical", "stale"):
         for line in _GLADOS[level]:
-            assert "window" in line.lower(), line
+            assert not re.search(r"ignore|nothing to worry|you're fine|open the", line.lower()), line
     announcer, _ = co2_announcement("Bedroom", 1499.6)
     assert "1500 parts per million" in announcer

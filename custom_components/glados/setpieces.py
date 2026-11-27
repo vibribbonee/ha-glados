@@ -8,8 +8,9 @@ is picked at random.
 The Announcer is its own character: the facility's automated system. It is a
 recording, so it reads a fixed line word for word, calm whether things are fine
 or lethal, with a reassurance that cancels itself and a polite sign-off.
-GLaDOS then speaks over it, directly to the occupant. When the warning is real
-she backs it up in her own way, so the window actually gets opened.
+GLaDOS then speaks over it, directly to the occupant. She never repeats its
+instruction; when the warning is real, her remark makes staying put the worse
+choice, so the window still gets opened.
 """
 
 from __future__ import annotations
@@ -37,24 +38,25 @@ _ANNOUNCER = {
 }
 
 _GLADOS = {
+    # She never repeats the Announcer's instruction: it already gave it. She ends
+    # on the sting, and the sting makes staying put the obviously worse choice.
     "critical": (
-        "Good news. The air in here has been rated breathable. By the plants. Open the window.",
+        "Good news. The air in here has been rated breathable. By the plants.",
         "I've been monitoring your thinking for the last hour. It's not a long report. "
-        "Open a window before it gets shorter.",
+        "It's getting shorter.",
         "Congratulations. You're running a carbon dioxide experiment, and you're the "
-        "control group. And the subject. Window.",
-        "Open the window. The alternative is a neurotoxin emitter, and this house "
-        "didn't come with one. Yet.",
+        "control group. And the subject.",
+        "The alternative to a window is a neurotoxin emitter. This house didn't come "
+        "with one. Yet.",
         "I'm not saying this air will hurt you. I'm saying I've started a file on what "
-        "it's doing. Window. Now.",
-        "Your last three decisions were made on this air. That explains a great deal. "
-        "Open the window.",
+        "it's doing.",
+        "Your last three decisions were made on this air. That explains a great deal.",
     ),
     "stale": (
-        "Eleven percent. I would have guessed more, but you started low. Window.",
+        "Eleven percent. I would have guessed more, but you started low.",
         "Stale air, stale ideas. Only one of those is fixed by a window.",
-        "Open a window. The air is tired, and one tired thing in this room is plenty.",
-        "Fresh air won't make you interesting. But it's a start. Window, please.",
+        "The air is tired. One tired thing in this room was already plenty.",
+        "Fresh air won't make you interesting. But it would be a start.",
     ),
     "fine": (
         "It wanted to feel useful. Let it have this.",
