@@ -18,6 +18,10 @@ from .const import DOMAIN
 STORAGE_VERSION = 1
 SAVE_DELAY = 5
 NOTE_PREFIX = "note "
+PRUNE_AFTER = timedelta(days=14)
+# Bookkeeping that only matters for a while: what was said, when, per item.
+TRANSIENT = ("reminded ", "heads_up ", "leave ", "bedtime ", "window ", "greeted ",
+             "asleep ", "docked ", "presence ", "comfort ", "air ")
 
 
 class GladosMemory:
@@ -30,8 +34,27 @@ class GladosMemory:
         self._data: dict[str, dict[str, str]] = {}
 
     async def async_load(self) -> None:
-        """Read the memory from storage."""
+        """Read the memory from storage, dropping old bookkeeping."""
         self._data = (await self._store.async_load()) or {}
+        self.prune()
+
+    def prune(self, older_than: timedelta = PRUNE_AFTER) -> int:
+        """Forget old "already done" notes; never the permanent file or alarms."""
+        cutoff = dt_util.now() - older_than
+        old = [
+            key for key, item in self._data.items()
+            if key.startswith(TRANSIENT) and (at := dt_util.parse_datetime(item.get("at", "")))
+            and at < cutoff
+        ]
+        for key in old:
+            self._data.pop(key)
+        if old:
+            self._store.async_delay_save(lambda: self._data, SAVE_DELAY)
+        return len(old)
+
+    async def async_flush(self) -> None:
+        """Write now: a reload must not lose the last seconds (an alarm just set)."""
+        await self._store.async_save(self._data)
 
     def get(self, key: str) -> str | None:
         """The stored value, or None."""

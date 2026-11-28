@@ -354,6 +354,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: GladosConfigEntry) -> b
     """Unload the config entry."""
     if not await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
         return False
+    await entry.runtime_data.memory.async_flush()
     for service in SERVICES:
         hass.services.async_remove(DOMAIN, service)
     return True
