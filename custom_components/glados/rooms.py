@@ -14,7 +14,7 @@ from typing import Any
 
 from homeassistant.const import STATE_ON
 from homeassistant.core import HomeAssistant, State
-from homeassistant.helpers import area_registry as ar, label_registry as lr
+from homeassistant.helpers import area_registry as ar, entity_registry as er, label_registry as lr
 from homeassistant.util import dt as dt_util
 
 from .const import (
@@ -112,19 +112,40 @@ def _pick_room(hass: HomeAssistant) -> str:
     return ""
 
 
+# Sensors that measure a device, not the room: a CPU, a 3D printer bed, a battery.
+_NOT_ROOM = re.compile(
+    r"cpu|gpu|chip|processor|soc\b|core|board|nozzle|bed_temp|bed_target|hotend|extruder"
+    r"|chamber|battery|printer|disk|ssd|nvme|router|inverter|charger|motor|engine|water_heater"
+    r"|boiler|fridge|freezer|oven|probe|outdoor|outside",
+    re.IGNORECASE,
+)
+# What a room can plausibly read; anything outside is a device or a broken sensor.
+_ROOM_RANGE = {"temperature": (0, 40), "humidity": (1, 100), "carbon_dioxide": (250, 10000)}
+
+
 def _sensor_value(
     hass: HomeAssistant, ents: list[str], device_class: str, preferred: set[str]
 ) -> float | None:
-    """A sensor of this class in the room, glados-labelled ones first."""
-    hits = []
+    """The room's own sensor of this class: glados-labelled first, never a device's insides."""
+    registry = er.async_get(hass)
+    low, high = _ROOM_RANGE.get(device_class, (float("-inf"), float("inf")))
+    labelled, others = [], []
     for entity_id in ents:
         if not entity_id.startswith("sensor."):
             continue
         state = hass.states.get(entity_id)
-        if state and _device_class(state) == device_class and _number(state) is not None:
-            hits.append(entity_id)
-    hits.sort(key=lambda e: e not in preferred)
-    return _number(hass.states.get(hits[0])) if hits else None
+        if not state or _device_class(state) != device_class or (value := _number(state)) is None:
+            continue
+        if entity_id in preferred:
+            labelled.append(value)
+            continue
+        entry = registry.async_get(entity_id)
+        name = f"{entity_id} {state.name}"
+        if (entry and entry.entity_category) or _NOT_ROOM.search(name) or not low <= value <= high:
+            continue
+        others.append(value)
+    hits = labelled or others
+    return hits[0] if hits else None
 
 
 def _before_alarm(

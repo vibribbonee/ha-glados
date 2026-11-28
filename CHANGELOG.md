@@ -1,7 +1,11 @@
 # Changelog
 
-## Unreleased
+## 0.9.3
 
+### Fixed
+- **A room's temperature is the room's.** With no sensor labelled `glados`, she took the first temperature sensor in the area, which could be a smart display's CPU ("the bedroom is 43 degrees"). She now skips sensors that measure a device (CPU, printer bed, battery, diagnostic sensors) and readings no room could have. A `glados`-labelled sensor still always wins.
+
+### Better to live with
 - **Live house shows humidity** next to temperature and CO2, so "it feels stuffy" gets a real answer. The weather line uses a weather entity labelled `glados` when there is one, and its own wind unit.
 
 ## 0.9.2
