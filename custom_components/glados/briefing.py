@@ -25,12 +25,20 @@ import re
 from typing import Any
 
 from homeassistant.core import Context, HomeAssistant
+from homeassistant.helpers import device_registry as dr, entity_registry as er
 from homeassistant.util import dt as dt_util
 
-from .const import CONF_BEDTIME_SENSOR, CONF_ROUTINE_MINUTES, LABEL_GLADOS
+from .const import (
+    CONF_BEDTIME_SENSOR,
+    CONF_CHARGE_BELOW,
+    CONF_KEEP_CHARGED,
+    CONF_ROUTINE_MINUTES,
+    LABEL_GLADOS,
+)
 from .dates import spoken_date
 from .people import (
     Person,
+    all_people,
     leave_time,
     next_alarms,
     people_home,
@@ -181,34 +189,83 @@ def _weather_line(f: dict[str, Any], label: str, wind_unit: str = "km/h") -> str
     return f"Weather {label}: {', '.join(bits)}."
 
 
+_CHARGING = ("charging", "full")
+_CHARGING_BINARY = re.compile(r"^binary_sensor\..*(charging|plugged)")
+
+
+def off_charger(
+    hass: HomeAssistant, battery: str, settled: timedelta = timedelta(minutes=2)
+) -> int | None:
+    """A battery's level when its device is really off the charger; else None.
+
+    Charging means a charger is attached (Android charger type), the battery says
+    charging or full (Android, iOS, macOS), or a charging binary sensor is on.
+    Wireless pads flicker for seconds when a phone is put down, and a phone or
+    laptop held at 80 percent reports "not charging" on the charger: neither
+    counts. Off the charger only once that has lasted `settled`.
+    """
+    level = hass.states.get(battery)
+    if not (level and level.state.replace(".", "", 1).isdigit()):
+        return None
+    reg = er.async_get(hass)
+    entry = reg.async_get(battery)
+    siblings = device_entities(hass, entry.device_id) if entry and entry.device_id else []
+    plug = next((hass.states.get(e) for e in siblings if _CHARGER.match(e)), None)
+    states = [hass.states.get(e) for e in siblings
+              if _BATTERY_STATE.match(e) or _CHARGING_BINARY.match(e)]
+    states = [s for s in states if s is not None]
+    if plug is not None and plug.state not in ("none", "unavailable", "unknown"):
+        return None
+    if any(s.state.lower() in _CHARGING or (s.domain == "binary_sensor" and s.state == "on")
+           for s in states):
+        return None
+    watched = [s for s in [plug, *states] if s is not None]
+    if not watched:
+        return None  # nothing says whether it charges
+    since = max(s.last_changed for s in watched)
+    if dt_util.utcnow() - since < settled:
+        return None  # a flicker, or just unplugged
+    return round(float(level.state))
+
+
 def phone_battery(
     hass: HomeAssistant, person: Person, settled: timedelta = timedelta(minutes=2)
 ) -> int | None:
-    """Their phone's battery level when it is really off the charger; else None.
-
-    Wireless pads flicker for seconds when a phone is put down, and a full or
-    adaptive-charging phone reports "not charging" while on the pad: neither is
-    off the charger. Only a charger gone for `settled` counts.
-    """
-    now = dt_util.utcnow()
+    """Their phone's battery level when it is really off the charger; else None."""
     for device in tracker_devices(hass, person):
         ents = device_entities(hass, device)
-        alarm = [e for e in ents if _NEXT_ALARM.match(e)]
-        battery = [e for e in ents if _BATTERY.match(e)]
-        charger = [e for e in ents if _CHARGER.match(e)]
-        if not (alarm and battery and charger):
+        if not any(_NEXT_ALARM.match(e) for e in ents):
             continue  # only phones
-        level = hass.states.get(battery[0])
-        plug = hass.states.get(charger[0])
-        status = [hass.states.get(e) for e in ents if _BATTERY_STATE.match(e)]
-        if not (plug and level and level.state.isdigit()):
-            continue
-        if plug.state != "none" or any(s and s.state in ("charging", "full") for s in status):
-            return None
-        if now - plug.last_changed < settled:
-            return None  # a flicker, or just picked up
-        return int(level.state)
+        if battery := next((e for e in ents if _BATTERY.match(e)), None):
+            return off_charger(hass, battery, settled)
     return None
+
+
+def device_warnings(
+    hass: HomeAssistant, options: dict[str, Any], people: list[Person] | None = None
+) -> list[str]:
+    """Other devices to charge overnight that are low and off the charger.
+
+    A device that is one of someone's tracked devices is theirs: it is only
+    mentioned to them. One nobody owns (a shared tablet) is mentioned to anyone.
+    """
+    below = float(options.get(CONF_CHARGE_BELOW, 40))
+    owners = {d: p.entity_id for p in all_people(hass) for d in tracker_devices(hass, p)}
+    told = {p.entity_id for p in people} if people is not None else None
+    lines = []
+    for battery in options.get(CONF_KEEP_CHARGED) or []:
+        entry = er.async_get(hass).async_get(battery)
+        owner = owners.get(entry.device_id) if entry and entry.device_id else None
+        if owner and told is not None and owner not in told:
+            continue  # someone else's laptop
+        level = off_charger(hass, battery)
+        if level is None or level >= below:
+            continue
+        device = dr.async_get(hass).async_get(entry.device_id) if entry and entry.device_id else None
+        name = (device.name_by_user or device.name) if device else None
+        name = name or str(hass.states.get(battery).name).replace(" battery level", "")
+        lines.append(f"The {name} is at {level} percent and not charging.")
+    return lines
 
 
 def _phone_warnings(hass: HomeAssistant, people: list[Person]) -> list[str]:
@@ -272,6 +329,7 @@ async def async_facts(
 
     if not morning:
         parts.extend(_phone_warnings(hass, people))
+        parts.extend(device_warnings(hass, options, people))
         sensor = str(options.get(CONF_BEDTIME_SENSOR) or "")
         if sensor and (state := hass.states.get(sensor)) and (bt := dt_util.parse_datetime(state.state)):
             passed = " (already passed)" if bt < now else ""

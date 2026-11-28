@@ -126,7 +126,9 @@
               "sleep_goal_hours": "Sleep goal",
               "minimum_sleep_hours": "Minimum sleep",
               "usual_bedtime": "Usual bedtime",
-              "bedtime_sensor": "Bedtime sensor"
+              "bedtime_sensor": "Bedtime sensor",
+              "keep_charged": "Keep charged",
+              "charge_below": "Charge below"
             },
             "data_description": {
               "morning_greeting": "After a morning alarm, once they are out of bed, or the first time a light goes on in their room: the Announcer's \"in suspension for\" line, then GLaDOS with the morning briefing. Lights labelled glados_wakeup fade on while it is dark. Turn off if an automation already does this.",
@@ -136,7 +138,9 @@
               "sleep_goal_hours": "Hours of sleep before a morning alarm: sets bedtime.",
               "minimum_sleep_hours": "Hours of sleep below which it is last call.",
               "usual_bedtime": "Bedtime on nights without a morning alarm. Empty: no nudges then.",
-              "bedtime_sensor": "Optional: a timestamp sensor with the time to be asleep, mentioned in the bedtime briefing."
+              "bedtime_sensor": "Optional: a timestamp sensor with the time to be asleep, mentioned in the bedtime briefing.",
+              "keep_charged": "Battery sensors of other devices to charge overnight, such as a laptop or tablet. At bedtime she mentions one that is low and off the charger. Phones with an alarm are watched anyway.",
+              "charge_below": "Battery level under which a device off the charger is mentioned at bedtime."
             }
           }
         },

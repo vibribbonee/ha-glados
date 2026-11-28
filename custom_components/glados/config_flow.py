@@ -59,6 +59,8 @@ from .const import (
     CONF_SETTLED,
     CONF_SLEEP_GOAL,
     CONF_USUAL_BEDTIME,
+    CONF_KEEP_CHARGED,
+    CONF_CHARGE_BELOW,
     CONF_VOICE_AGENT,
     CONF_WELCOME,
     CONF_WARM_ABOVE,
@@ -169,6 +171,9 @@ SECTIONS: dict[str, list[Field]] = {
         (CONF_USUAL_BEDTIME, False, selector.TimeSelector(), str),
         (CONF_BEDTIME_SENSOR, False, selector.EntitySelector(
             selector.EntitySelectorConfig(domain="sensor", device_class="timestamp")), str),
+        (CONF_KEEP_CHARGED, False, selector.EntitySelector(selector.EntitySelectorConfig(
+            domain="sensor", device_class="battery", multiple=True)), list),
+        (CONF_CHARGE_BELOW, True, _number(5, 95, 5, "%"), int),
     ],
 }
 _STORE = {key: store for fields in SECTIONS.values() for key, _, _, store in fields}

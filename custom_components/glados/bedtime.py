@@ -9,8 +9,10 @@ the minimum sleep. While they are home and awake, in the room they are in:
 - at bedtime: GLaDOS says so;
 - half an hour before the last call, only if lights are still on in their room:
   the Announcer's last call, with one GLaDOS sting;
-- at bedtime and last call, a phone low and off the charger is said; going to bed
-  with it (in bed, or the bedroom dark) gets one push on the phone, never a voice.
+- at bedtime and last call, a phone low and off the charger is said, and so is any
+  "keep charged" device (a laptop); going to bed with the phone off the charger
+  (in bed, or the bedroom dark) gets one push in the first 45 minutes, never a
+  voice and never later in the night.
 
 Never for someone in bed or in a dark room, never on Do Not Disturb or during
 a video; outside the speaking schedule it still speaks, since bedtime is late.
@@ -27,7 +29,7 @@ from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.util import dt as dt_util
 
 from .announce import AnnounceRequest
-from .briefing import async_briefing, phone_battery
+from .briefing import async_briefing, device_warnings, phone_battery
 from .const import (
     CONF_BEDTIME,
     CONF_MIN_SLEEP,
@@ -55,6 +57,9 @@ LAST_CALL_BEFORE = timedelta(minutes=30)
 # morning alarm is on it).
 PHONE_LOW = 60
 OFF_CHARGER_IN_BED = timedelta(minutes=10)  # past the pad's flicker and a last scroll
+# Only while still settling in: a push after that could wake them. (A phone that
+# dies in the night is what the backup alarm is for.)
+SETTLING_IN = timedelta(minutes=45)
 NIGHT_FROM, NIGHT_UNTIL = 21, 4
 
 
@@ -128,19 +133,28 @@ class Bedtimes:
         return said
 
     def _phone_line(self, person: Person) -> str:
+        """Said in the bedtime and last-call nudges: their phone, and devices to charge."""
+        lines = device_warnings(self.hass, self.data.options, [person])
         level = phone_battery(self.hass, person)
-        if level is None or level >= PHONE_LOW:
-            return ""
-        return f"Your phone is at {level} percent and not on the charger. Plug it in."
+        if level is not None and level < PHONE_LOW:
+            lines.insert(0, f"Your phone is at {level} percent and not on the charger.")
+        return " ".join(lines + ["Plug it in."] if len(lines) == 1 else
+                        lines + ["Plug them in."] if lines else [])
 
     async def _phone_in_bed(self, person: Person, now: datetime) -> dict[str, Any] | None:
         """Gone to bed with the phone off the charger: a push, never a voice in the dark."""
         if not (now.hour >= NIGHT_FROM or now.hour < NIGHT_UNTIL):
             return None
         ctx = describe(self.hass, person_area(self.hass, person), None)
+        night = (now - timedelta(hours=NIGHT_UNTIL + 1)).date().isoformat()
+        bed_key = f"phone bed {person.entity_id}"
         if not (ctx.in_bed or ctx.dark_bedroom):
             return None
-        night = (now - timedelta(hours=NIGHT_UNTIL + 1)).date().isoformat()
+        if self.data.memory.get(bed_key) != night:
+            self.data.memory.set(bed_key, night)  # first seen in bed tonight
+        settling = self.data.memory.age(bed_key)
+        if settling is None or settling > SETTLING_IN:
+            return None  # asleep by now, or close: never wake them for this
         key = f"phone warned {person.entity_id}"
         level = phone_battery(self.hass, person, OFF_CHARGER_IN_BED)
         if level is None or level >= PHONE_LOW or self.data.memory.get(key) == night:

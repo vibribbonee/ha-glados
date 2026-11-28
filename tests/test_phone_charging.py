@@ -71,3 +71,65 @@ def test_weather_in_words() -> None:
     gale = {"condition": "windy", "temperature": 10, "wind_speed": 20, "precipitation": 0.4}
     assert _weather_line({**gale, "wind_speed": 20}, "tomorrow", "m/s") == (
         "Weather tomorrow: 10 degrees, a chance of a shower, stormy.")
+
+
+async def test_no_push_once_asleep(home: Home, freezer) -> None:
+    hass = home.hass
+    freezer.move_to(NIGHT)
+    bedtimes, said = await _bedtimes(home)
+    from pytest_homeassistant_custom_component.common import async_mock_service
+    pushed = async_mock_service(hass, "notify", "send_message")
+    _phone(home, "35", "wireless", "charging")
+    hass.states.async_set("binary_sensor.bed_occupancy", "on", {"device_class": "occupancy"})
+    await bedtimes.async_tick()  # in bed, phone on the pad
+    freezer.tick(timedelta(hours=3))  # 02:30: it slid off the pad
+    hass.states.async_set("sensor.pixel_9a_charger_type", "none")
+    hass.states.async_set("sensor.pixel_9a_battery_state", "discharging")
+    freezer.tick(timedelta(minutes=20))
+    await bedtimes.async_tick()
+    assert not pushed and not said  # the backup alarm covers a dead phone
+
+
+def _laptop(home: Home, level: str, status: str, owner: bool = False) -> str:
+    from homeassistant.helpers import device_registry as dr
+    from pytest_homeassistant_custom_component.common import MockConfigEntry
+    source = MockConfigEntry(domain="mobile_app")
+    source.add_to_hass(home.hass)
+    device = dr.async_get(home.hass).async_get_or_create(
+        config_entry_id=source.entry_id, identifiers={("mobile_app", "mac")}, name="MacBook Pro").id
+    battery = home.entity("sensor.macbook_pro_internal_battery_level", level, device=device,
+                          device_class="battery")
+    home.entity("sensor.macbook_pro_internal_battery_state", status, device=device)
+    if owner:
+        home.entity("device_tracker.macbook_pro", "home", device=device)
+        attrs = dict(home.hass.states.get("person.nico").attributes)
+        attrs["device_trackers"] = [*attrs["device_trackers"], "device_tracker.macbook_pro"]
+        home.hass.states.async_set("person.nico", "home", attrs)
+    return battery
+
+
+async def test_laptop_to_keep_charged(home: Home, freezer) -> None:
+    from custom_components.glados.briefing import device_warnings
+    hass = home.hass
+    freezer.move_to(NIGHT)
+    battery = _laptop(home, "80", "Not Charging")
+    options = {"keep_charged": [battery], "charge_below": 40}
+    freezer.tick(timedelta(hours=1))
+    assert device_warnings(hass, options) == []  # held at 80 on the charger, or fine anyway
+    hass.states.async_set(battery, "23", {"device_class": "battery"})
+    assert device_warnings(hass, options) == [
+        "The MacBook Pro is at 23 percent and not charging."]
+    hass.states.async_set("sensor.macbook_pro_internal_battery_state", "Charging")
+    assert device_warnings(hass, options) == []
+
+
+async def test_someone_elses_laptop_is_not_mentioned(home: Home, freezer) -> None:
+    from custom_components.glados.briefing import device_warnings
+    hass = home.hass
+    freezer.move_to(NIGHT)
+    battery = _laptop(home, "20", "Not Charging", owner=True)
+    freezer.tick(timedelta(hours=1))
+    options = {"keep_charged": [battery], "charge_below": 40}
+    assert device_warnings(hass, options, [_nico(hass)]) == [
+        "The MacBook Pro is at 20 percent and not charging."]
+    assert device_warnings(hass, options, []) == []  # told to someone else: not theirs

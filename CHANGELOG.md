@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.9.5
+
+### Better to live with
+- **Never woken for a charger.** The phone push comes only in the first 45 minutes after getting into bed, never later in the night. A phone that dies overnight is what the backup alarm is for.
+- **Keep other devices charged.** New in Days and nights: **Keep charged** (battery sensors of a laptop, tablet, headset) and **Charge below** (40% by default). At bedtime she says one that is low and off the charger. A device that is one of someone's tracked devices is theirs and is mentioned only to them. A shared one goes to anyone.
+- Charging is recognised the same way for every device: a charger attached, the battery saying charging or full (Android, iOS, macOS), or a charging sensor on. A battery held at 80% doesn't count as "not charging".
+
 ## 0.9.4
 
 ### Better to live with
