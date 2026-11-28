@@ -35,7 +35,8 @@
               "voice_agent": "Voice agent",
               "house_notes": "House notes",
               "live_house": "Live house summary",
-              "occupants": "People who live here"
+              "visitors": "Stays sometimes",
+              "not_people": "Not people"
             },
             "data_description": {
               "chat_agent": "The conversation agent she thinks with, such as an Ollama, OpenAI, Google or Anthropic agent with Assist control on. Not GLaDOS itself.",
@@ -44,7 +45,8 @@
               "voice_agent": "A separate agent that rewrites announcements in her voice. Empty: the chat agent does it.",
               "house_notes": "What only this house knows, in a few short sentences: pets, nicknames for devices, habits. Added to her tool instructions.",
               "live_house": "Gives her a short live summary with every request: who is home and where, each room's climate, open windows, the weather, alarms, leave times and the next calendar items. Turn off if the chat agent's own prompt already has a live list.",
-              "occupants": "Who gets a bedtime, leave time, morning greeting and the rest. Empty: everyone with a phone or a login, which can include a guest login or a wall tablet."
+              "visitors": "People who stay now and then, such as a partner or a friend. While here they get everything (bedtime, morning greeting, leave time); while away nothing is said about them, and she treats them as a visitor, not an occupant.",
+              "not_people": "Person entities that are not someone: a wall tablet, a guest login. Everyone else with a phone or a login is looked after, so a new roommate counts from day one."
             }
           },
           "voices": {

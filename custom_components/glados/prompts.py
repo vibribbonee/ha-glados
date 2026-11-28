@@ -122,13 +122,18 @@ def persona(hass: HomeAssistant, home_town: str = "") -> str:
     """Her full character, with this home's town, people and time."""
     from .people import real_people  # people imports nothing from here
 
-    names = sorted(p.name.capitalize() for p in real_people(hass))
+    everyone = real_people(hass)
+    names = sorted(p.name.capitalize() for p in everyone if not p.visitor)
+    guests = sorted(p.name.capitalize() for p in everyone if p.visitor)
     if len(names) == 1:
         people = f"The occupant is {names[0]}. "
     elif names:
         people = f"The occupants are {', '.join(names[:-1])} and {names[-1]}. "
     else:
         people = ""
+    if guests:
+        who = guests[0] if len(guests) == 1 else f"{', '.join(guests[:-1])} and {guests[-1]}"
+        people += f"{who} {'stays' if len(guests) == 1 else 'stay'} over now and then; not an occupant. "
     where = f" in {home_town}" if home_town else ""
     return PERSONA.format(where=where, people=people, now=_now(hass))
 

@@ -60,7 +60,8 @@ from .const import (
     CONF_SLEEP_GOAL,
     CONF_USUAL_BEDTIME,
     CONF_KEEP_CHARGED,
-    CONF_OCCUPANTS,
+    CONF_NOT_PEOPLE,
+    CONF_VISITORS,
     CONF_CHARGE_BELOW,
     CONF_VOICE_AGENT,
     CONF_WELCOME,
@@ -132,7 +133,9 @@ SECTIONS: dict[str, list[Field]] = {
         (CONF_HOUSE_NOTES, False, selector.TextSelector(
             selector.TextSelectorConfig(multiline=True)), str),
         (CONF_LIVE_HOUSE, True, SWITCH, bool),
-        (CONF_OCCUPANTS, False, selector.EntitySelector(selector.EntitySelectorConfig(
+        (CONF_VISITORS, False, selector.EntitySelector(selector.EntitySelectorConfig(
+            domain="person", multiple=True)), list),
+        (CONF_NOT_PEOPLE, False, selector.EntitySelector(selector.EntitySelectorConfig(
             domain="person", multiple=True)), list),
     ],
     "voices": [

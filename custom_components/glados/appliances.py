@@ -20,7 +20,7 @@ from homeassistant.util import dt as dt_util
 
 from .announce import AnnounceRequest
 from .const import CONF_APPLIANCES, LABEL_APPLIANCE, VOICE_ANNOUNCER
-from .people import people_home, phones, real_people
+from .people import people_home, phones, residents
 from .registry import label_entities
 from .setpieces import appliance_lines
 
@@ -90,7 +90,7 @@ class Appliances:
         result = await self.data.announcer.async_announce(AnnounceRequest(
             facts=announcer, voice=VOICE_ANNOUNCER, glados_line=glados))
         if not result.get("spoken"):
-            people = people_home(self.hass) or real_people(self.hass)
+            people = people_home(self.hass) or residents(self.hass)
             targets = sorted({x for p in people for x in phones(self.hass, p)})
             if targets:
                 await self.hass.services.async_call(

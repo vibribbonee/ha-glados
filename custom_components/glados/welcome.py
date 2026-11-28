@@ -36,6 +36,8 @@ def _join(names: list[str]) -> str:
 
 
 def _duration(away: timedelta) -> str:
+    if away >= timedelta(days=2):
+        return f"{away.days} days"
     hours = int(away.total_seconds() // 3600)
     minutes = int(away.total_seconds() % 3600 // 60)
     if hours == 0:
@@ -85,7 +87,10 @@ class Welcome:
         if now - arrived < SETTLE or (area is None and now - arrived < SETTLE * 2):
             return None
         away = arrived - dt_util.parse_datetime(info["left"])
-        line = f"Welcome back, {person.name.capitalize()}. You were away for {_duration(away)}."
+        if person.visitor:  # back for a stay, not back from the shops
+            line = f"Welcome back, {person.name.capitalize()}. The facility has kept your room. Barely."
+        else:
+            line = f"Welcome back, {person.name.capitalize()}. You were away for {_duration(away)}."
         missed = json.loads(memory.get(f"missed {person.entity_id}") or "[]")
         if missed:
             items = [f"{m['what']} at {dt_util.as_local(dt_util.parse_datetime(m['at'])).strftime('%H:%M')}"

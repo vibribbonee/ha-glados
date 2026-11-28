@@ -60,6 +60,8 @@ def house_state(hass: HomeAssistant) -> str:
     lines: list[str] = [f"Live house at {now.strftime('%H:%M')}:"]
 
     for person in real_people(hass):
+        if person.visitor and not person.home:
+            continue  # not staying over now: nothing to say about them
         if person.away:
             where = "away"
         elif area := person_area(hass, person):

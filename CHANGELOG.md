@@ -1,12 +1,20 @@
 # Changelog
 
+## 0.9.7
+
+### Changed
+- **New people count automatically.** 0.9.6's "People who live here" list would have left every new roommate out until someone remembered to add them. It's replaced by two lists for the exceptions:
+  - **Not people:** a wall tablet, a guest login. Everyone else with a phone or a login is looked after from the day their person is made.
+  - **Stays sometimes:** a partner, a friend who visits weekly or monthly. While they're here they get everything (bedtime, greeting, leave time). While they're away nothing is said about them, and she calls them a visitor, not an occupant. Coming back gets a "kept your room" welcome instead of "you were away for 12 days".
+- A long absence is said in days ("away for 3 days"), not hours.
+
 ## 0.9.6
 
 Everything per person, for homes with more than one.
 
 ### New
 - **Sleep goal <name>** and **Usual bedtime <name>** entities for every occupant, next to their leave time and morning routine. They start at the house settings, which stay as the default. Set someone's own to give them their own bedtime.
-- **People who live here** (first settings section): who counts as an occupant. Left empty, it's everyone with a phone or a login, which can include a guest login or a wall tablet. Fill it in to leave those out. Per-person entities of someone left out (or removed) are cleaned up instead of lingering as unavailable.
+- (Replaced in 0.9.7 by **Not people** and **Stays sometimes**.)
 
 ### Better to live with
 - **"Add it to my calendar"** goes to the speaker's own calendar: one whose name or id has their name in it ("Edo's calendar", `calendar.nico`). Otherwise the `glados`-labelled one.

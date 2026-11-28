@@ -52,16 +52,31 @@ async def test_my_calendar_is_the_speakers(home: Home) -> None:
     assert writable_calendars(hass, _person(hass, "person.nico"))[0] != "calendar.edo"
 
 
-async def test_people_who_live_here_setting(home: Home) -> None:
+async def test_not_people_and_visitors(home: Home, freezer) -> None:
+    from custom_components.glados.house import house_state
+    from custom_components.glados.people import real_people, residents
+    from custom_components.glados.prompts import persona
+    hass = home.hass
+    hass.states.async_set("person.tablet", "unknown", {"friendly_name": "Tablet", "user_id": "u-t"})
+    hass.states.async_set("person.byte", "not_home", {"friendly_name": "byte", "user_id": "u-b"})
+    entry, _ = await setup(hass, {})
+    assert {p.entity_id for p in real_people(hass)} == {"person.nico", "person.tablet", "person.byte"}
+    hass.config_entries.async_update_entry(entry, options={
+        **entry.options, "not_people": ["person.tablet"], "visitors": ["person.byte"]})
+    await hass.async_block_till_done()
+    assert [p.entity_id for p in residents(hass)] == ["person.nico"]
+    assert "The occupant is Nico. Byte stays over now and then; not an occupant." in persona(hass)
+    assert "Byte" not in house_state(hass)  # away: nothing to say
+    hass.states.async_set("person.byte", "home", {"friendly_name": "byte", "user_id": "u-b"})
+    assert "- Byte: home" in house_state(hass)
+
+
+async def test_a_new_roommate_counts_at_once(home: Home) -> None:
     from custom_components.glados.people import real_people
     hass = home.hass
-    hass.states.async_set("person.guest", "unknown", {"friendly_name": "Guest", "user_id": "u-guest"})
-    entry, _ = await setup(hass, {})
-    assert {p.entity_id for p in real_people(hass)} == {"person.nico", "person.guest"}
-    hass.config_entries.async_update_entry(entry, options={**entry.options,
-                                                           "occupants": ["person.nico"]})
-    await hass.async_block_till_done()
-    assert [p.entity_id for p in real_people(hass)] == ["person.nico"]
+    entry, _ = await setup(hass, {"not_people": ["person.tablet"]})
+    add_person(home, "edo", "Office")
+    assert "person.edo" in {p.entity_id for p in real_people(hass)}
 
 
 async def test_entities_of_someone_who_left_go(home: Home) -> None:
@@ -71,7 +86,7 @@ async def test_entities_of_someone_who_left_go(home: Home) -> None:
     reg = er.async_get(hass)
     assert reg.async_get_entity_id("number", "glados", "sleep_goal_person.guest")
     hass.config_entries.async_update_entry(entry, options={**entry.options,
-                                                           "occupants": ["person.nico"]})
+                                                           "not_people": ["person.guest"]})
     assert await hass.config_entries.async_reload(entry.entry_id)
     await hass.async_block_till_done()
     assert reg.async_get_entity_id("number", "glados", "sleep_goal_person.guest") is None

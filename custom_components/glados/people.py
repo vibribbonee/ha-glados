@@ -24,7 +24,8 @@ from homeassistant.util import dt as dt_util
 
 from .const import (
     BED_PATTERN,
-    CONF_OCCUPANTS,
+    CONF_NOT_PEOPLE,
+    CONF_VISITORS,
     DOMAIN,
     LEAVE_HELPER_PREFIX,
     OWN_LIST_TEMPLATE,
@@ -50,6 +51,7 @@ class Person:
     entity_id: str
     name: str
     state: str
+    visitor: bool = False  # stays now and then: everything while here, nothing while gone
 
     @property
     def slug(self) -> str:
@@ -77,29 +79,36 @@ def all_people(hass: HomeAssistant) -> list[Person]:
 
 
 def real_people(hass: HomeAssistant) -> list[Person]:
-    """People who live here.
+    """The people GLaDOS looks after: those who live here and those who stay.
 
-    The "People who live here" setting when it is filled in. Otherwise worked
-    out: a person with a device tracker or a Home Assistant login. That guess
-    counts a guest login or a wall tablet with a tracker as an occupant, which
-    is what the setting is for.
+    Everyone with a device tracker or a Home Assistant login, so a new roommate
+    counts from the day their person is made, except the "Not people" in the
+    settings (a wall tablet, a guest login). "Stays sometimes" people are in,
+    marked as visitors.
     """
-    chosen = _occupants_setting(hass)
+    not_people = set(_setting(hass, CONF_NOT_PEOPLE))
+    visitors = set(_setting(hass, CONF_VISITORS))
     found = []
     for state in hass.states.async_all("person"):
-        if chosen:
-            if state.entity_id in chosen:
-                found.append(_person(state))
-        elif state.attributes.get("device_trackers") or state.attributes.get("user_id"):
-            found.append(_person(state))
+        if state.entity_id in not_people:
+            continue
+        if (state.entity_id in visitors or state.attributes.get("device_trackers")
+                or state.attributes.get("user_id")):
+            found.append(Person(state.entity_id, state.name, state.state,
+                                visitor=state.entity_id in visitors))
     return found
 
 
-def _occupants_setting(hass: HomeAssistant) -> list[str]:
+def residents(hass: HomeAssistant) -> list[Person]:
+    """The people who live here (not the visitors)."""
+    return [p for p in real_people(hass) if not p.visitor]
+
+
+def _setting(hass: HomeAssistant, key: str) -> list[str]:
     entries = hass.config_entries.async_entries(DOMAIN)
     if not entries:
         return []
-    value = entries[0].options.get(CONF_OCCUPANTS) or []
+    value = entries[0].options.get(key) or []
     return [value] if isinstance(value, str) else list(value)
 
 
