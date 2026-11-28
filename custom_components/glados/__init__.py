@@ -38,6 +38,7 @@ from homeassistant.helpers import llm
 
 from .addon import async_start_addons
 from .air import AirWatch
+from .appliances import Appliances
 from .alarms import AlarmClock
 from .departures import Departures
 from .heartbeat import Heartbeat
@@ -216,6 +217,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: GladosConfigEntry) -> bo
     heart.add("air and windows", air.async_tick)
     heart.add("her own initiative", Character(hass, run).async_tick)
     heart.add("welcome home", Welcome(hass, run).async_tick)
+    heart.add("appliances", Appliances(hass, run).async_tick)
 
     async def _quiet_ends(now) -> None:  # so the Quiet mode switch goes off on time
         run.announcer.quiet_until()

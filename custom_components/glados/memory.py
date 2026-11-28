@@ -21,7 +21,7 @@ NOTE_PREFIX = "note "
 PRUNE_AFTER = timedelta(days=14)
 # Bookkeeping that only matters for a while: what was said, when, per item.
 TRANSIENT = ("reminded ", "heads_up ", "leave ", "bedtime ", "window ", "greeted ",
-             "asleep ", "docked ", "presence ", "comfort ", "air ")
+             "asleep ", "docked ", "presence ", "comfort ", "air ", "appliance ")
 
 
 class GladosMemory:

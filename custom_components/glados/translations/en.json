@@ -103,14 +103,16 @@
               "leave_heads_up_minutes": "Leave heads-up",
               "routine_minutes": "Default morning routine",
               "alarm_backup_minutes": "Alarm backup after",
-              "welcome_home": "Welcome home"
+              "welcome_home": "Welcome home",
+              "appliance_notices": "Appliance notices"
             },
             "data_description": {
               "reminders": "To-dos with a due time on each person's own list and the shared To-do list, said in their room when due, or sent to their phone. What comes due while they sleep goes to the phone and is also said after they wake. Turn off if an automation already does this.",
               "leave_heads_up_minutes": "Minutes before a person's leave time that the Announcer gives a heads-up. At the time itself it says leave now, with what is still on and open. 0: only leave now.",
               "routine_minutes": "Minutes from alarm to the door, for people without their own Morning routine helper.",
               "alarm_backup_minutes": "A morning alarm on a phone that has not been dismissed by then, or a phone that is off or never showed the alarm, rings on the room's speaker.",
-              "welcome_home": "Coming home after at least an hour away: how long they were gone, the reminders that came due while they were out, and what is still on or open."
+              "welcome_home": "Coming home after at least an hour away: how long they were gone, the reminders that came due while they were out, and what is still on or open.",
+              "appliance_notices": "Label a power sensor glados_appliance (a washing machine's smart plug, say). When it has run for ten minutes and then goes idle, she says the cycle is done, with how long it took."
             }
           },
           "nights": {

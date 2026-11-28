@@ -1,8 +1,12 @@
 # Changelog
 
-## 0.8.0 (not installed yet)
+## 0.9.0
+
+Everything since 0.7.0 in one release.
 
 ### New
+- **"The washing machine is done."** Label a power sensor `glados_appliance`. When it has run for ten minutes and then goes idle, the Announcer says the cycle is complete and how long it took, with a GLaDOS remark; nobody home, the phones. A pause mid-cycle or a kettle is not a cycle. Setting: **Appliance notices**.
+- **Deliveries.** Delivery calendars (labelled `glados_deliveries`, or named like PostNL, DHL, parcel) are mentioned in the welcome home: "A delivery is due today". The morning briefing already includes them.
 - **Add-ons.** GLaDOS works on her own; anything that needs another integration becomes an add-on: its own integration and repository, with `glados` as a dependency. Add-ons register tools, lines for her instructions and background jobs through `custom_components.glados.addon`, and speak through her announcer, quiet rules and voices. See [docs/ADDONS.md](docs/ADDONS.md).
 - **Leave-time reminders in the integration.** For each person with a `leave_home_<person>` helper, while they are home: a heads-up before (**Leave heads-up**, 15 minutes, with the outside temperature), then "leave now" at the time, by the Announcer in their room, with one GLaDOS remark. New: "leave now" also says what is still on (`glados_left_on`) and which windows and doors are open. Asleep or on Do Not Disturb: their phone. A minute missed during a restart is caught up, up to five minutes late.
 
@@ -44,6 +48,7 @@ One release instead of many small ones, so the house restarts once.
 - **One heartbeat.** Her background features run in turn on one timer; one that fails is logged once and the others carry on. A slow beat (a busy voice agent) is never piled up.
 
 ### Fixed
+- **Nobody home, nobody spoken to.** With everyone out, she no longer announces to an empty house because a pet set off a presence sensor; it goes to the phones. Alarms still ring.
 - **A reload loses nothing.** Changing a setting right after setting an alarm or quiet mode reloads GLaDOS; her memory is now written out first, so nothing from the last few seconds is lost. Found by simulating a reload mid-day.
 - **Her memory stays small.** Bookkeeping notes (what was said when, per reminder, window, leave time) are forgotten after two weeks; the permanent file and alarms are kept.
 - **A guest is not an occupant anywhere.** A Guest or Tablet person at home is no longer briefed ("Guest has no alarm set") or counted as a second person.

@@ -65,6 +65,7 @@ CONF_WARM_ABOVE = "warm_above"
 CONF_SETTLED = "settled_minutes"  # in the room this long: not just passing through
 CONF_NOTICES = "facility_notices"
 CONF_IDLE = "idle_remarks"
+CONF_APPLIANCES = "appliance_notices"  # "the washing machine is done"
 CONF_WELCOME = "welcome_home"  # coming home: what you missed
 CONF_MORNING = "morning_greeting"  # wake-up greeting, birthday, "in suspension for"
 CONF_BIRTHDAY_SONG = "birthday_song"  # media id, played before the birthday line
@@ -95,6 +96,7 @@ DEFAULTS: dict[str, str | int | bool] = {
     CONF_LEAVE_HEADS_UP: 15,
     CONF_MORNING: True,
     CONF_WELCOME: True,
+    CONF_APPLIANCES: True,
     CONF_COMFORT: True,
     CONF_COLD_BELOW: 16,
     CONF_WARM_ABOVE: 25,
@@ -116,6 +118,7 @@ LABEL_HEATING = "glados_heating"
 LABEL_COOLING = "glados_cooling"
 LABEL_OWN_CHIME = "glados_own_chime"
 LABEL_BEDROOM = "glados_bedroom"  # on an area: a bedroom, whatever its name
+LABEL_APPLIANCE = "glados_appliance"  # a power sensor: say when its cycle is done
 LABEL_LEFT_ON = "glados_left_on"  # should not stay on when everyone leaves or sleeps
 
 # Device classes that mean someone is in a room

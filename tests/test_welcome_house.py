@@ -54,6 +54,12 @@ async def test_welcome_home_with_what_you_missed(home: Home, freezer) -> None:
     hass = home.hass
     entry = await _setup(hass)
     said = async_mock_service(hass, "assist_satellite", "announce")
+    hass.states.async_set("calendar.postnl_deliveries", "on", {"friendly_name": "PostNL Deliveries"})
+    from homeassistant.core import SupportsResponse
+    async_mock_service(hass, "calendar", "get_events", supports_response=SupportsResponse.ONLY,
+                       response={"calendar.postnl_deliveries": {"events": [
+                           {"start": NOW.date().isoformat(), "end": NOW.date().isoformat(),
+                            "summary": "Your parcel from Bol"}]}})
     welcome = Welcome(hass, entry.runtime_data)
     attrs = hass.states.get("person.nico").attributes
     await welcome.async_tick()  # home: noted
@@ -70,6 +76,7 @@ async def test_welcome_home_with_what_you_missed(home: Home, freezer) -> None:
     [greeting] = await welcome.async_tick()
     assert greeting["speech"].startswith("Welcome back, Nico. You were away for 2 hours and 30 minutes.")
     assert "While you were out: Call the dentist at 11:00." in greeting["speech"]
+    assert "A delivery is due today: Your parcel from Bol." in greeting["speech"]
     assert greeting["after"]
     freezer.tick(timedelta(minutes=3))
     assert await welcome.async_tick() == []  # once

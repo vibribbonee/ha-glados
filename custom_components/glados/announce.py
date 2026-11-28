@@ -70,6 +70,8 @@ def blocked_reason(
     awake: the person is known to be up (for a bedtime nudge), so an alarm later
     on is no reason to think they are asleep.
     """
+    if not ctx.anyone_home:
+        return "nobody is home"  # a pet on the presence sensor is no audience
     if not ignore_schedule and not ctx.may_speak:
         return "outside speaking hours"
     if ctx.in_bed:

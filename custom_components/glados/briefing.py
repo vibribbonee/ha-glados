@@ -70,8 +70,30 @@ def _hm(value: datetime) -> str:
     return dt_util.as_local(value).strftime("%H:%M")
 
 
-async def _events(hass: HomeAssistant, start: datetime, end: datetime) -> list[Event]:
-    calendars = [
+DELIVERY_NAME = re.compile(r"deliver|parcel|package|pakket|bezorg|postnl|\b(dhl|ups|dpd|gls)\b", re.I)
+LABEL_DELIVERIES = "glados_deliveries"
+
+
+def delivery_calendars(hass: HomeAssistant) -> list[str]:
+    """Calendars of deliveries: labelled glados_deliveries, or named like it (PostNL)."""
+    labelled = label_entities(hass, LABEL_DELIVERIES)
+    return [s.entity_id for s in hass.states.async_all("calendar")
+            if s.state not in ("unavailable", "unknown")
+            and (s.entity_id in labelled or DELIVERY_NAME.search(s.name or ""))]
+
+
+async def deliveries_today(hass: HomeAssistant) -> list[str]:
+    """What is due to be delivered today."""
+    calendars = delivery_calendars(hass)
+    if not calendars:
+        return []
+    start = dt_util.start_of_local_day()
+    return [e.title for e in await _events(hass, start, start + timedelta(days=1), calendars)]
+
+
+async def _events(hass: HomeAssistant, start: datetime, end: datetime,
+                  calendars: list[str] | None = None) -> list[Event]:
+    calendars = calendars if calendars is not None else [
         s.entity_id for s in hass.states.async_all("calendar")
         if s.state not in ("unavailable", "unknown")
     ]

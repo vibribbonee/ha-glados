@@ -17,6 +17,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.util import dt as dt_util
 
 from .announce import AnnounceRequest
+from .briefing import deliveries_today
 from .const import CONF_WELCOME, VOICE_ANNOUNCER
 from .departures import still_on
 from .people import Person, person_area, real_people
@@ -90,6 +91,8 @@ class Welcome:
             items = [f"{m['what']} at {dt_util.as_local(dt_util.parse_datetime(m['at'])).strftime('%H:%M')}"
                      for m in missed]
             line += f" While you were out: {_join(items)}."
+        if parcels := await deliveries_today(self.hass):
+            line += f" A delivery is due today: {_join(parcels)}."
         on, open_ = still_on(self.hass)
         if on:
             line += f" Still on: {_join(on)}."

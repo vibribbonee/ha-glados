@@ -420,3 +420,21 @@ _WELCOME_GLADOS = (
 
 def welcome_glados(rng: random.Random | None = None) -> str:
     return (rng or random).choice(_WELCOME_GLADOS)
+
+
+# Appliances finishing. {name} is the appliance, {minutes} how long it ran.
+
+_APPLIANCE_GLADOS = (
+    "Unlike you, it finished something today.",
+    "It did its job without supervision. Take notes.",
+    "I'd let it sit there, but the smell becomes part of your permanent file.",
+    "Go on. It won't empty itself. Nothing here does, apparently.",
+)
+
+
+def appliance_lines(name: str, minutes: int, rng: random.Random | None = None) -> tuple[str, str]:
+    """The Announcer and GLaDOS when an appliance finishes its run."""
+    took = (f"{minutes // 60} hour{'s' if minutes // 60 != 1 else ''} and {minutes % 60} minutes"
+            if minutes >= 60 else f"{minutes} minutes")
+    return (f"Notice. The {name} has completed its cycle, after {took}. Please collect the "
+            "results.", (rng or random).choice(_APPLIANCE_GLADOS))

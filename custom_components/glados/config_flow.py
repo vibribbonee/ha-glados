@@ -30,6 +30,7 @@ from homeassistant.helpers import selector
 
 from .const import (
     CONF_ALARM_BACKUP,
+    CONF_APPLIANCES,
     CONF_ANNOUNCER_VOICE,
     CONF_BEDTIME,
     CONF_BEDTIME_SENSOR,
@@ -113,6 +114,7 @@ SECTIONS: dict[str, list[Field]] = {
     "days": [
         (CONF_REMINDERS, True, SWITCH, bool),
         (CONF_WELCOME, True, SWITCH, bool),
+        (CONF_APPLIANCES, True, SWITCH, bool),
         (CONF_LEAVE_HEADS_UP, True, _number(0, 120, 5, "min"), int),
         (CONF_ROUTINE_MINUTES, True, _number(5, 180, 5, "min"), int),
         (CONF_ALARM_BACKUP, True, _number(1, 60, 1, "min"), int),
