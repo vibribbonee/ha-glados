@@ -17,6 +17,7 @@ from __future__ import annotations
 from collections import deque
 from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Any
 from urllib.parse import quote
 
@@ -40,6 +41,7 @@ from .voice import async_say, drop_repeat
 
 
 HISTORY = 10
+QUIET_KEY = "quiet until"
 
 
 @dataclass
@@ -99,12 +101,35 @@ def announcer_media_id(voice_setting: str, line: str) -> str:
 class Announcer:
     """Speaks through assist satellites, politely."""
 
-    def __init__(self, hass: HomeAssistant, options: dict[str, Any]) -> None:
+    def __init__(self, hass: HomeAssistant, options: dict[str, Any], memory: Any = None) -> None:
         self.hass = hass
         self.options = {**DEFAULTS, **options}
+        self.memory = memory  # for quiet mode; optional in tests
         # What she said, or why she stayed quiet: newest first, for the sensor.
         self.history: deque[dict[str, Any]] = deque(maxlen=HISTORY)
         self.listeners: list[Callable[[], None]] = []
+
+    def quiet_until(self) -> datetime | None:
+        """Quiet mode: no unprompted speech until then (alarms still ring)."""
+        raw = self.memory.get(QUIET_KEY) if self.memory else None
+        until = dt_util.parse_datetime(raw) if raw else None
+        if until and until <= dt_util.now():
+            self.memory.forget(QUIET_KEY)
+            for listener in list(self.listeners):
+                listener()
+            return None
+        return until
+
+    def set_quiet(self, until: datetime | None) -> None:
+        """Quiet until then; None ends it."""
+        if self.memory is None:
+            return
+        if until is None:
+            self.memory.forget(QUIET_KEY)
+        else:
+            self.memory.set(QUIET_KEY, until.isoformat())
+        for listener in list(self.listeners):
+            listener()
 
     def _record(self, req: AnnounceRequest, result: dict[str, Any]) -> dict[str, Any]:
         self.history.appendleft({
@@ -137,6 +162,9 @@ class Announcer:
         ctx = describe(self.hass, area, str(self.options[CONF_SCHEDULE] or "") or None)
         if req.wake:
             reason = "" if (req.satellite or ctx.satellite or ctx.any_satellite) else "no voice satellite"
+        elif (until := self.quiet_until()) is not None:
+            reason = ("quiet mode" if until.year >= 2100
+                      else f"quiet mode until {dt_util.as_local(until).strftime('%H:%M')}")
         else:
             reason = blocked_reason(
                 ctx, req.ignore_schedule, req.anywhere or bool(req.satellite), req.awake

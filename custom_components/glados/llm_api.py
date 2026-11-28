@@ -659,8 +659,64 @@ class Briefing(GladosTool):
         return llm.ToolResult(data={"say": result["say"]})
 
 
+class QuietFor(GladosTool):
+    name = "quiet_mode"
+    title = "Quiet mode"
+    description = (
+        "'Be quiet for an hour', 'no announcements until 3', 'you can talk again': "
+        "stops all your unprompted speech (warnings, notices, reminders out loud) for a "
+        "while; reminders still reach their phone and alarms still ring. off true ends it. "
+        "Confirm in at most a few words."
+    )
+    parameters = p.Schema(
+        {
+            p.Optional("minutes", description="For this many minutes."): p.All(
+                p.Coerce(int), p.Range(min=1, max=1440)),
+            p.Optional("until", description="Until this time, such as 15:00."): str,
+            p.Optional("off", description="true to talk again.", default=False): p.Boolean(),
+        }
+    )
+
+    async def run(self, hass, args, llm_context):
+        announcer = self.data.announcer
+        if args["off"]:
+            announcer.set_quiet(None)
+            return llm.ToolResult(data={"quiet": False})
+        now = dt_util.now()
+        if minutes := args.get("minutes"):
+            until = now + timedelta(minutes=minutes)
+        elif (t := parse_time(args.get("until"))) is not None:
+            until = resolve_moment("", t, now)
+        else:
+            until = now + timedelta(hours=1)
+        announcer.set_quiet(until)
+        return llm.ToolResult(data={"quiet_until": _hm(until), "day": days_away(until, now)})
+
+
+class RepeatLast(GladosTool):
+    name = "repeat_last"
+    title = "What did you say?"
+    description = (
+        "'What did you say?', 'say that again', 'what was that announcement?': the last "
+        "things you or the Announcer said unprompted, newest first, with when and where. "
+        "Repeat the newest one as it was said."
+    )
+    annotations = _READS
+    parameters = p.Schema({})
+
+    async def run(self, hass, args, llm_context):
+        spoken = [h for h in self.data.announcer.history if h.get("spoken")][:3]
+        if not spoken:
+            return _error("Nothing was said recently.")
+        return llm.ToolResult(data={"said": [
+            {"when": _hm(dt_util.parse_datetime(h["at"])),
+             "where": area_name(hass, h["area"]) if h.get("area") else "",
+             "text": " ".join(x for x in (h.get("speech"), h.get("after")) if x)}
+            for h in spoken]})
+
+
 TOOLS = (SetReminder, SetLeaveTime, AddToCalendar, UpcomingEvents, NoteInFile, SetVolume,
-         SetAlarm, StopAlarm, Broadcast, LeavingCheck, Briefing)
+         SetAlarm, StopAlarm, Broadcast, LeavingCheck, Briefing, QuietFor, RepeatLast)
 
 
 class GladosAPI(llm.API):

@@ -322,6 +322,11 @@
       "last_announcement": {
         "name": "Last announcement"
       }
+    },
+    "switch": {
+      "quiet_mode": {
+        "name": "Quiet mode"
+      }
     }
   },
   "selector": {

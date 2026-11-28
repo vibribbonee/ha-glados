@@ -104,6 +104,7 @@ from .voice import async_say
 
 PLATFORMS = [
     Platform.BUTTON,
+    Platform.SWITCH,
     Platform.CONVERSATION,
     Platform.DATETIME,
     Platform.NUMBER,
@@ -199,7 +200,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: GladosConfigEntry) -> bo
     memory = GladosMemory(hass)
     await memory.async_load()
     options = _options(entry)
-    entry.runtime_data = GladosData(memory, Announcer(hass, options), options)
+    entry.runtime_data = GladosData(memory, Announcer(hass, options, memory), options)
     entry.async_on_unload(entry.add_update_listener(_async_reload))
     entry.async_on_unload(llm.async_register_api(hass, GladosAPI(hass, entry.runtime_data)))
     run = entry.runtime_data
@@ -215,6 +216,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: GladosConfigEntry) -> bo
     heart.add("air and windows", air.async_tick)
     heart.add("her own initiative", Character(hass, run).async_tick)
     heart.add("welcome home", Welcome(hass, run).async_tick)
+
+    async def _quiet_ends(now) -> None:  # so the Quiet mode switch goes off on time
+        run.announcer.quiet_until()
+
+    heart.add("quiet mode", _quiet_ends)
     entry.async_on_unload(heart.start())
 
     @callback
