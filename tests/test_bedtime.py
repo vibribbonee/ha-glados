@@ -44,7 +44,6 @@ async def test_from_the_morning_alarm(home: Home) -> None:
 
 
 async def test_three_nudges(home: Home, freezer) -> None:
-    hass = home.hass
     bedtimes, said = await _bedtimes(home)
     with patch("custom_components.glados.bedtime.async_briefing",
                AsyncMock(return_value={"say": "Nothing tomorrow. Restful.", "facts": ""})):

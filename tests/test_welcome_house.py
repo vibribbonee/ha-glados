@@ -54,7 +54,7 @@ async def test_notes_and_house_in_her_instructions(home: Home) -> None:
 async def test_welcome_home_with_what_you_missed(home: Home, freezer) -> None:
     hass = home.hass
     entry = await _setup(hass)
-    said = async_mock_service(hass, "assist_satellite", "announce")
+    async_mock_service(hass, "assist_satellite", "announce")
     hass.states.async_set("calendar.postnl_deliveries", "on", {"friendly_name": "PostNL Deliveries"})
     from homeassistant.core import SupportsResponse
     async_mock_service(hass, "calendar", "get_events", supports_response=SupportsResponse.ONLY,

@@ -6,7 +6,6 @@ from unittest.mock import AsyncMock, patch
 
 from homeassistant.core import HomeAssistant, SupportsResponse
 from homeassistant.helpers import entity_registry as er
-from homeassistant.setup import async_setup_component
 
 from custom_components.glados.briefing import async_facts
 

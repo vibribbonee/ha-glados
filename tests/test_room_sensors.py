@@ -26,3 +26,11 @@ async def test_a_labelled_sensor_always_wins(home: Home) -> None:
     home.entity("sensor.desk_probe_temperature", "21", area=office, device_class="temperature",
                 labels={"glados"})
     assert describe(home.hass, office).temperature == 21
+
+
+async def test_an_offline_co2_sensor_is_said(home: Home) -> None:
+    from custom_components.glados.house import house_state
+    study = ar.async_get(home.hass).async_create("Study").id
+    home.entity("sensor.study_climate_temperature", "19.5", area=study, device_class="temperature")
+    home.entity("sensor.study_co2", "unavailable", area=study, device_class="carbon_dioxide")
+    assert "- Study: 20 degrees, CO2 sensor offline, so the CO2 is unknown" in house_state(home.hass)

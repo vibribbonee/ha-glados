@@ -25,7 +25,7 @@ from .dates import days_away
 from .departures import still_on
 from .people import leave_time, next_alarms, person_area, real_people
 from .const import LABEL_GLADOS
-from .registry import area_name, label_entities
+from .registry import area_entities, area_name, label_entities
 from .rooms import describe
 
 MAX_CHARS = 1400
@@ -42,6 +42,16 @@ def _when(hass: HomeAssistant, start: str, all_day: bool) -> str:
     if day not in ("today", "tomorrow"):
         day = f"on {at.strftime('%A')} {at.day} {at.strftime('%B')}"
     return day if all_day else f"{day} at {at.strftime('%H:%M')}"
+
+
+def _offline(hass: HomeAssistant, area: str, device_class: str) -> bool:
+    """The room has a sensor of this class, and it is not answering."""
+    return any(
+        (state := hass.states.get(e)) is not None
+        and state.attributes.get("device_class") == device_class
+        and state.state in ("unavailable", "unknown")
+        for e in area_entities(hass, area) if e.startswith("sensor.")
+    )
 
 
 def house_state(hass: HomeAssistant) -> str:
@@ -71,6 +81,8 @@ def house_state(hass: HomeAssistant) -> str:
             parts.append(f"{round(ctx.temperature)} degrees")
         if ctx.co2 is not None:
             parts.append(f"CO2 {round(ctx.co2)} parts per million")
+        elif _offline(hass, area.id, "carbon_dioxide"):
+            parts.append("CO2 sensor offline, so the CO2 is unknown")
         if ctx.humidity is not None:
             parts.append(f"humidity {round(ctx.humidity)} percent")
         if parts:
