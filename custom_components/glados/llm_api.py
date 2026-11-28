@@ -76,8 +76,8 @@ _WRITES = llm.ToolAnnotations(read_only=False, destructive=False, idempotent=Fal
 _READS = llm.ToolAnnotations(read_only=True, destructive=False, idempotent=True, open_world=False)
 
 _DAY = "today, tomorrow, a weekday such as monday, or a date as YYYY-MM-DD"
-_PERSON = "Name of who it is for. Empty: the person speaking, or the only person at home."
-_LEAVER = "Name of who is leaving. Empty: the person speaking, or the only person at home."
+_PERSON = "Only when it is for another person they name, such as remind Byte. Otherwise leave out."
+_LEAVER = "Only when another person they name is leaving, such as Byte leaves at 8. Otherwise leave out."
 
 
 def _hm(value: datetime) -> str:
@@ -162,7 +162,7 @@ class SetReminder(GladosTool):
             ),
             p.Optional("time", description="Time of day, such as 15:00."): str,
             p.Optional("day", description=f"{_DAY}. Empty: the next time it comes."): str,
-            p.Optional("person", description=_PERSON): str,
+            p.Optional("someone_else", description=_PERSON): str,
         }
     )
 
@@ -174,7 +174,7 @@ class SetReminder(GladosTool):
             at = resolve_moment(args.get("day"), t, now)
         else:
             return _error("Ask when: a time or a number of minutes.")
-        wanted = args.get("person", "")
+        wanted = args.get("someone_else", "")
         person = _who(hass, llm_context, wanted)
         if person is None and wanted:
             return _error(f"No person called {wanted}.")
@@ -217,7 +217,7 @@ class SetLeaveTime(GladosTool):
         {
             p.Optional("time", description="Leave time, such as 07:45."): str,
             p.Optional("day", description=f"{_DAY}. Empty: the next time it comes."): str,
-            p.Optional("person", description=_LEAVER): str,
+            p.Optional("someone_else", description=_LEAVER): str,
             p.Optional("clear", description="No leave time, no reminder.", default=False): p.Boolean(),
         }
     )
@@ -226,7 +226,7 @@ class SetLeaveTime(GladosTool):
         candidates = [x for x in all_people(hass) if has_leave_helper(hass, x)]
         if not candidates:
             return _error("Nobody has a leave time yet. Reload GLaDOS to create them.")
-        person: Person | None = _who(hass, llm_context, args.get("person", ""), candidates)
+        person: Person | None = _who(hass, llm_context, args.get("someone_else", ""), candidates)
         if person is None:
             return _error(
                 "Ask who is leaving. People with a leave time: "
@@ -402,11 +402,12 @@ class NoteInFile(GladosTool):
         "about themselves worth keeping, or asks you to remember something."
     )
     parameters = p.Schema(
-        {p.Required("note", description="One short fact, with the person's name."): str}
+        {p.Required("new_fact", description=(
+            "What they just told you, in a few words, with their name.")): str}
     )
 
     async def run(self, hass, args, llm_context):
-        note = args["note"].strip()[:80]
+        note = args["new_fact"].strip()[:80]
         self.data.memory.add_note(note)
         return llm.ToolResult(data={"noted": note})
 
@@ -477,9 +478,11 @@ class SetAlarm(GladosTool):
         {
             p.Required("time", description="Alarm time, such as 07:30."): str,
             p.Optional("day", description=f"{_DAY}. Empty: the next time it comes."): str,
-            p.Optional("person", description=_PERSON): str,
+            p.Optional("someone_else", description=_PERSON): str,
             p.Optional("label", description="Short label, such as Dentist."): str,
-            p.Optional("ring_on", description="phone or room, only when they say."): p.In(
+            p.Optional("ring_on", description=(
+                "Leave empty. Only when they literally say where: phone for 'on my phone', "
+                "room for 'on the speaker' or 'in the bedroom'.")): p.In(
                 ["phone", "room", "both"]
             ),
         }
@@ -491,14 +494,15 @@ class SetAlarm(GladosTool):
             return _error("Ask for the time, such as seven thirty.")
         now = dt_util.now()
         at = resolve_moment(args.get("day"), t, now)
-        wanted = args.get("person", "")
+        wanted = args.get("someone_else", "")
         person = _who(hass, llm_context, wanted)
         if person is None and wanted:
             return _error(f"No person called {wanted}.")
         morning = 3 <= at.hour < MORNING_ENDS_HOUR
         # A phone alarm always gets the backup: it only rings when the phone fails.
+        # A morning alarm always includes the phone: small models pick "room" unasked.
         ring_on = args.get("ring_on") or ("phone" if morning else "room")
-        if ring_on == "phone":
+        if ring_on == "phone" or morning:
             ring_on = "both"
         phones = android_phone_alarms(hass, person) if person else []
         notes: list[str] = []

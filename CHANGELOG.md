@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.9.1
+
+### Fixed
+- **She no longer fills in things nobody said.** An evaluation against the real model found that "I have to leave at 7:45 on Monday" set the leave time for someone else, "wake me at 7:30" picked the speaker instead of the phone, and "remember that I hate olives" saved the mushrooms already in the file. Fields are now named for what they mean (`someone_else`, `new_fact`), and a morning alarm always includes the phone.
+- **`tools/eval_model.py`**: test a model against your Ollama before switching. Results in [docs/MODELS.md](docs/MODELS.md): stay on the tuned Qwen3 8B.
+
 ## 0.9.0
 
 Everything since 0.7.0 in one release.

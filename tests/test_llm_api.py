@@ -57,7 +57,7 @@ async def test_reminder(home: Home) -> None:
     assert result.data["time"] == "10:20" and result.data["day"] == "today"
 
     assert (await _call(api, "set_reminder", what="x")).error
-    assert (await _call(api, "set_reminder", what="x", in_minutes=5, person="Edo")).error
+    assert (await _call(api, "set_reminder", what="x", in_minutes=5, someone_else="Edo")).error
 
 
 async def test_leave_time(home: Home) -> None:
@@ -113,7 +113,7 @@ async def test_calendar(home: Home) -> None:
 async def test_permanent_file(home: Home) -> None:
     api = await _api(home.hass)
     assert "still empty" in api.api_prompt and "Friday 27 November" in api.api_prompt
-    assert (await _call(api, "note_in_file", note="Nico hates mushrooms")).data == {
+    assert (await _call(api, "note_in_file", new_fact="Nico hates mushrooms")).data == {
         "noted": "Nico hates mushrooms"
     }
     ctx = llm.LLMContext(platform="t", context=None, language="en", assistant="c", device_id=None)
