@@ -34,9 +34,10 @@ async def test_live_house(home: Home) -> None:
     hass.states.async_set("calendar.personal", "off", {
         "friendly_name": "Personal", "message": "Birthday Yannick", "all_day": True,
         "start_time": "2026-11-28 00:00:00"})
+    home.entity("sensor.bedroom_humidity", "61.4", area=home.bedroom, device_class="humidity")
     text = house_state(hass)
     assert "- Nico: home, in the Bedroom" in text
-    assert "- Bedroom: 18 degrees, CO2 1240 parts per million" in text
+    assert "- Bedroom: 18 degrees, CO2 1240 parts per million, humidity 61 percent" in text
     assert "- Personal calendar, next: Birthday Yannick, tomorrow" in text
     assert len(text) <= 1400
 

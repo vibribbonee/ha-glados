@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- **Live house shows humidity** next to temperature and CO2, so "it feels stuffy" gets a real answer. The weather line uses a weather entity labelled `glados` when there is one, and its own wind unit.
+
 ## 0.9.2
 
 ### Better to live with

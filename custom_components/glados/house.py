@@ -3,7 +3,7 @@
 What a person asks about most, worked out in Python and kept short, so a small
 model gets the facts without a long template eating its context:
 
-- each room's climate (temperature, CO2) where there is a sensor;
+- each room's climate (temperature, CO2, humidity) where there is a sensor;
 - who is home, and in which room;
 - windows and doors that are open (placed ones only);
 - the weather outside now;
@@ -24,7 +24,8 @@ from homeassistant.util import dt as dt_util
 from .dates import days_away
 from .departures import still_on
 from .people import leave_time, next_alarms, person_area, real_people
-from .registry import area_name
+from .const import LABEL_GLADOS
+from .registry import area_name, label_entities
 from .rooms import describe
 
 MAX_CHARS = 1400
@@ -70,6 +71,8 @@ def house_state(hass: HomeAssistant) -> str:
             parts.append(f"{round(ctx.temperature)} degrees")
         if ctx.co2 is not None:
             parts.append(f"CO2 {round(ctx.co2)} parts per million")
+        if ctx.humidity is not None:
+            parts.append(f"humidity {round(ctx.humidity)} percent")
         if parts:
             lines.append(f"- {area.name}: {', '.join(parts)}")
 
@@ -79,12 +82,15 @@ def house_state(hass: HomeAssistant) -> str:
 
     weather = [s for s in hass.states.async_all("weather") if s.state not in ("unavailable", "unknown")]
     if weather:
-        w = weather[0]
+        tagged = label_entities(hass, LABEL_GLADOS)
+        w = next((s for s in weather if s.entity_id in tagged), weather[0])
         temp = w.attributes.get("temperature")
         wind = w.attributes.get("wind_speed")
         text = str(w.state).replace("partlycloudy", "partly cloudy").replace("-", " ")
         bits = [text] + ([f"{round(temp)} degrees"] if temp is not None else [])
-        bits += [f"wind {round(wind)} kilometres per hour"] if wind is not None else []
+        unit = w.attributes.get("wind_speed_unit") or "km/h"
+        unit = {"km/h": "kilometres per hour", "m/s": "metres per second", "mph": "miles per hour"}.get(unit, unit)
+        bits += [f"wind {round(wind)} {unit}"] if wind is not None else []
         lines.append(f"- Outside: {', '.join(bits)}")
 
     for cal in hass.states.async_all("calendar"):

@@ -60,6 +60,7 @@ class RoomContext:
     may_speak: bool = False
     temperature: float | None = None
     co2: float | None = None
+    humidity: float | None = None
     windows: list[str] = field(default_factory=list)
     open_windows: list[str] = field(default_factory=list)
     outside: float | None = None
@@ -229,6 +230,7 @@ def describe(
     # Climate
     ctx.temperature = _sensor_value(hass, ents, "temperature", glados)
     ctx.co2 = _sensor_value(hass, ents, "carbon_dioxide", glados)
+    ctx.humidity = _sensor_value(hass, ents, "humidity", glados)
     windows = [
         e
         for e in ents
