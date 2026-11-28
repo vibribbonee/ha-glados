@@ -253,15 +253,26 @@ class SetLeaveTime(GladosTool):
         )
 
 
-def writable_calendars(hass: HomeAssistant) -> list[str]:
-    """Calendars that can take new events, the glados-labelled one first."""
+def writable_calendars(hass: HomeAssistant, person: Person | None = None) -> list[str]:
+    """Calendars that can take new events: the person's own first, then glados-labelled.
+
+    A calendar is someone's when its name or entity id has their name in it
+    ("Edo's calendar", calendar.nico). With several people, "add it to my
+    calendar" then lands on the speaker's own.
+    """
     writable = [
-        s.entity_id
-        for s in hass.states.async_all("calendar")
+        s for s in hass.states.async_all("calendar")
         if int(s.attributes.get(ATTR_SUPPORTED_FEATURES) or 0) & CalendarEntityFeature.CREATE_EVENT
     ]
     labelled = label_entities(hass, LABEL_GLADOS)
-    return sorted(writable, key=lambda e: e not in labelled)
+    names = {person.name.lower(), person.slug.lower()} if person else set()
+
+    def theirs(state) -> bool:
+        text = f"{state.entity_id} {state.name}".lower()
+        return any(re.search(rf"(^|[^a-z]){re.escape(n)}([^a-z]|$)", text) for n in names if n)
+
+    ranked = sorted(writable, key=lambda s: (not theirs(s), s.entity_id not in labelled))
+    return [s.entity_id for s in ranked]
 
 
 class AddToCalendar(GladosTool):
@@ -285,7 +296,7 @@ class AddToCalendar(GladosTool):
     )
 
     async def run(self, hass, args, llm_context):
-        calendars = writable_calendars(hass)
+        calendars = writable_calendars(hass, _who(hass, llm_context, ""))
         wanted = args.get("calendar", "").strip().lower()
         if wanted:
             calendars = [

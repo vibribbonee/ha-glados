@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.9.6
+
+Everything per person, for homes with more than one.
+
+### New
+- **Sleep goal <name>** and **Usual bedtime <name>** entities for every occupant, next to their leave time and morning routine. They start at the house settings, which stay as the default. Set someone's own to give them their own bedtime.
+- **People who live here** (first settings section): who counts as an occupant. Left empty, it's everyone with a phone or a login, which can include a guest login or a wall tablet. Fill it in to leave those out. Per-person entities of someone left out (or removed) are cleaned up instead of lingering as unavailable.
+
+### Better to live with
+- **"Add it to my calendar"** goes to the speaker's own calendar: one whose name or id has their name in it ("Edo's calendar", `calendar.nico`). Otherwise the `glados`-labelled one.
+
 ## 0.9.5
 
 ### Better to live with

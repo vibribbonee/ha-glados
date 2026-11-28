@@ -34,7 +34,8 @@
               "home_town": "Home town",
               "voice_agent": "Voice agent",
               "house_notes": "House notes",
-              "live_house": "Live house summary"
+              "live_house": "Live house summary",
+              "occupants": "People who live here"
             },
             "data_description": {
               "chat_agent": "The conversation agent she thinks with, such as an Ollama, OpenAI, Google or Anthropic agent with Assist control on. Not GLaDOS itself.",
@@ -42,7 +43,8 @@
               "home_town": "Where the house is, for her remarks and local searches. Optional.",
               "voice_agent": "A separate agent that rewrites announcements in her voice. Empty: the chat agent does it.",
               "house_notes": "What only this house knows, in a few short sentences: pets, nicknames for devices, habits. Added to her tool instructions.",
-              "live_house": "Gives her a short live summary with every request: who is home and where, each room's climate, open windows, the weather, alarms, leave times and the next calendar items. Turn off if the chat agent's own prompt already has a live list."
+              "live_house": "Gives her a short live summary with every request: who is home and where, each room's climate, open windows, the weather, alarms, leave times and the next calendar items. Turn off if the chat agent's own prompt already has a live list.",
+              "occupants": "Who gets a bedtime, leave time, morning greeting and the rest. Empty: everyone with a phone or a login, which can include a guest login or a wall tablet."
             }
           },
           "voices": {
@@ -135,9 +137,9 @@
               "birthday_song": "A sound played before the birthday greeting: pick it from your media. Empty: no song.",
               "birthday_names": "Other names a person's birthday appears under in the calendar, as person: names; such as nico: Sjors, Nico; byte: Bee. Their own name always counts.",
               "bedtime_nudges": "Per person, in their room: an hour before bedtime, at bedtime, and the Announcer's last call when the lights are still on. Bedtime is their next morning alarm minus the sleep goal. Turn off if an automation already says these.",
-              "sleep_goal_hours": "Hours of sleep before a morning alarm: sets bedtime.",
+              "sleep_goal_hours": "Hours of sleep before a morning alarm: sets bedtime. Each person's own Sleep goal entity overrides it.",
               "minimum_sleep_hours": "Hours of sleep below which it is last call.",
-              "usual_bedtime": "Bedtime on nights without a morning alarm. Empty: no nudges then.",
+              "usual_bedtime": "Bedtime on nights without a morning alarm. Each person's own Usual bedtime entity overrides it. Empty: no nudges then.",
               "bedtime_sensor": "Optional: a timestamp sensor with the time to be asleep, mentioned in the bedtime briefing.",
               "keep_charged": "Battery sensors of other devices to charge overnight, such as a laptop or tablet. At bedtime she mentions one that is low and off the charger. Phones with an alarm are watched anyway.",
               "charge_below": "Battery level under which a device off the charger is mentioned at bedtime."

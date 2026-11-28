@@ -58,6 +58,7 @@ CONF_BEDTIME_SENSOR = "bedtime_sensor"  # optional timestamp sensor: when to be 
 CONF_BEDTIME = "bedtime_nudges"  # per person: an hour before, bedtime, last call
 CONF_SLEEP_GOAL = "sleep_goal_hours"
 CONF_MIN_SLEEP = "minimum_sleep_hours"
+CONF_OCCUPANTS = "occupants"  # person entities who live here; empty: worked out
 CONF_KEEP_CHARGED = "keep_charged"  # battery sensors of devices to charge overnight
 CONF_CHARGE_BELOW = "charge_below"  # percent under which they are mentioned
 CONF_USUAL_BEDTIME = "usual_bedtime"  # HH:MM, for nights without a morning alarm
@@ -110,6 +111,7 @@ DEFAULTS: dict[str, str | int | bool] = {
     CONF_MIN_SLEEP: 6,
     CONF_USUAL_BEDTIME: "",
     CONF_KEEP_CHARGED: [],
+    CONF_OCCUPANTS: [],
     CONF_CHARGE_BELOW: 40,
     CONF_BIRTHDAY_SONG: "",
     CONF_BIRTHDAY_NAMES: "",

@@ -18,6 +18,7 @@ permanent file (see llm_api.py).
 from __future__ import annotations
 
 from dataclasses import dataclass
+import re
 from typing import Any
 
 import voluptuous as vol
@@ -95,6 +96,7 @@ from .people import (
     own_list,
     person_area,
     phones,
+    real_people,
     resolve_person,
     routine_minutes,
 )
@@ -110,6 +112,7 @@ PLATFORMS = [
     Platform.DATETIME,
     Platform.NUMBER,
     Platform.SENSOR,
+    Platform.TIME,
 ]
 
 SERVICES = (
@@ -345,8 +348,23 @@ async def async_setup_entry(hass: HomeAssistant, entry: GladosConfigEntry) -> bo
     register(DOMAIN, SERVICE_WHO, _who, WHO_SCHEMA, SupportsResponse.ONLY)
     register(DOMAIN, SERVICE_REMEMBER, _remember, REMEMBER_SCHEMA)
     register(DOMAIN, SERVICE_RECALL, _recall, RECALL_SCHEMA, SupportsResponse.ONLY)
+    _drop_entities_of_former_occupants(hass, entry)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
+
+
+def _drop_entities_of_former_occupants(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Per-person entities of someone who is no longer an occupant go.
+
+    A person removed, or left out of "People who live here": their leave time,
+    routine and bedtime entities would otherwise linger as unavailable.
+    """
+    keep = {p.entity_id for p in real_people(hass)}
+    reg = er.async_get(hass)
+    for item in er.async_entries_for_config_entry(reg, entry.entry_id):
+        person = re.search(r"(person\.[a-z0-9_]+)$", item.unique_id or "")
+        if person and person.group(1) not in keep:
+            reg.async_remove(item.entity_id)
 
 
 async def _async_reload(hass: HomeAssistant, entry: ConfigEntry) -> None:

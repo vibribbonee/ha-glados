@@ -41,7 +41,15 @@ from .const import (
     VOICE_GLADOS,
 )
 from .dates import parse_time
-from .people import Person, next_alarms, people_home, person_area, phones
+from .people import (
+    Person,
+    next_alarms,
+    people_home,
+    person_area,
+    phones,
+    sleep_goal_hours,
+    usual_bedtime,
+)
 from .registry import area_of, label_entities
 from .rooms import describe
 from .setpieces import bedtime_glados, last_call_lines
@@ -85,11 +93,11 @@ def bedtime_for(hass: HomeAssistant, options: dict[str, Any], person: Person,
     """When this person should be asleep, and their last call."""
     now = now or dt_util.now()
     alarm = morning_alarm(hass, person, now)
-    goal = timedelta(hours=float(options.get(CONF_SLEEP_GOAL, 8)))
+    goal = timedelta(hours=sleep_goal_hours(hass, person, float(options.get(CONF_SLEEP_GOAL, 8))))
     minimum = timedelta(hours=float(options.get(CONF_MIN_SLEEP, 6)))
     if alarm:
         return Bedtime(person, alarm - goal, alarm - minimum, alarm)
-    usual = parse_time(str(options.get(CONF_USUAL_BEDTIME) or ""))
+    usual = parse_time(usual_bedtime(hass, person, str(options.get(CONF_USUAL_BEDTIME) or "")))
     if usual is None:
         return Bedtime(person, None, None, None)
     at = datetime.combine(now.date(), usual, tzinfo=now.tzinfo)

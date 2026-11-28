@@ -24,6 +24,8 @@ from homeassistant.util import dt as dt_util
 
 from .const import (
     BED_PATTERN,
+    CONF_OCCUPANTS,
+    DOMAIN,
     LEAVE_HELPER_PREFIX,
     OWN_LIST_TEMPLATE,
     ROUTINE_DEFAULT_HELPER,
@@ -75,16 +77,30 @@ def all_people(hass: HomeAssistant) -> list[Person]:
 
 
 def real_people(hass: HomeAssistant) -> list[Person]:
-    """People who live here: with a device tracker or a Home Assistant login.
+    """People who live here.
 
-    A person entity made for a wall tablet or "Guest" has neither, and is not an
-    occupant: no bedtime, no leave time, not named in her personality.
+    The "People who live here" setting when it is filled in. Otherwise worked
+    out: a person with a device tracker or a Home Assistant login. That guess
+    counts a guest login or a wall tablet with a tracker as an occupant, which
+    is what the setting is for.
     """
+    chosen = _occupants_setting(hass)
     found = []
     for state in hass.states.async_all("person"):
-        if state.attributes.get("device_trackers") or state.attributes.get("user_id"):
+        if chosen:
+            if state.entity_id in chosen:
+                found.append(_person(state))
+        elif state.attributes.get("device_trackers") or state.attributes.get("user_id"):
             found.append(_person(state))
     return found
+
+
+def _occupants_setting(hass: HomeAssistant) -> list[str]:
+    entries = hass.config_entries.async_entries(DOMAIN)
+    if not entries:
+        return []
+    value = entries[0].options.get(CONF_OCCUPANTS) or []
+    return [value] if isinstance(value, str) else list(value)
 
 
 def people_home(hass: HomeAssistant) -> list[Person]:
@@ -233,6 +249,8 @@ def resolve_person(
 
 LEAVE_UNIQUE = "leave_home_{}"  # GLaDOS's own entity per person
 ROUTINE_UNIQUE = "morning_routine_{}"
+SLEEP_GOAL_UNIQUE = "sleep_goal_{}"
+USUAL_BEDTIME_UNIQUE = "usual_bedtime_{}"
 CLEARED = "2000-01-01 00:00:00"
 
 
@@ -316,3 +334,23 @@ def own_list(hass: HomeAssistant, person: Person | None) -> str:
         if state is not None and state.state not in ("unknown", "unavailable"):
             return own
     return SHARED_LIST
+
+
+def _own_value(hass: HomeAssistant, domain: str, unique: str) -> str | None:
+    entity_id = _own_entity(hass, domain, unique)
+    state = hass.states.get(entity_id) if entity_id else None
+    return state.state if state and state.state not in _UNUSABLE else None
+
+
+def sleep_goal_hours(hass: HomeAssistant, person: Person, default: float = 8) -> float:
+    """Their own "Sleep goal <name>", else the house setting."""
+    value = _own_value(hass, "number", SLEEP_GOAL_UNIQUE.format(person.entity_id))
+    try:
+        return float(value) if value is not None else float(default)
+    except ValueError:
+        return float(default)
+
+
+def usual_bedtime(hass: HomeAssistant, person: Person, default: str = "") -> str:
+    """Their own "Usual bedtime <name>" (HH:MM:SS), else the house setting."""
+    return _own_value(hass, "time", USUAL_BEDTIME_UNIQUE.format(person.entity_id)) or default
