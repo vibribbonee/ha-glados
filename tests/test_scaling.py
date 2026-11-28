@@ -71,7 +71,7 @@ async def test_room_without_bermuda(home: Home) -> None:
     # Only Nico home, only the bedroom shows presence: he is there.
     assert person_area(hass, nico) == home.bedroom
     # A second person home: no longer certain.
-    hass.states.async_set("person.byte", "home", hass.states.get("person.byte").attributes)
+    hass.states.async_set("person.byte", "home", {"friendly_name": "byte", "user_id": "user-byte"})
     assert person_area(hass, nico) is None
 
 

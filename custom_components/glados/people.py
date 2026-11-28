@@ -88,8 +88,12 @@ def real_people(hass: HomeAssistant) -> list[Person]:
 
 
 def people_home(hass: HomeAssistant) -> list[Person]:
-    """Everyone at home."""
-    return [p for p in all_people(hass) if p.home]
+    """The occupants at home (people with a phone or a login).
+
+    A person entity for a guest or a wall tablet is set by hand and is not an
+    occupant: it is not briefed, named or counted as someone else being home.
+    """
+    return [p for p in real_people(hass) if p.home]
 
 
 def tracker_devices(hass: HomeAssistant, person: Person | str) -> list[str]:
