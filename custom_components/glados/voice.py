@@ -7,19 +7,20 @@ says nothing, the plain facts are spoken instead, so a reminder is never lost.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import re
 from typing import Any
 
 from homeassistant.components import conversation
 from homeassistant.core import Context, HomeAssistant
-from homeassistant.exceptions import HomeAssistantError
 
 from .const import CONF_CHAT_AGENT, CONF_PERSONALITY, CONF_VOICE_AGENT, DEFAULTS
 from .prompts import voice
 from .speech import clean_for_speech
 
 _LOGGER = logging.getLogger(__name__)
+VOICE_TIMEOUT = 30
 
 
 def build_prompt(facts: str, request: str = "", task: str = "") -> str:
@@ -87,16 +88,20 @@ async def async_say(
         return clean_for_speech(spare)
     line = ""
     try:
-        result = await conversation.async_converse(
-            hass,
-            build_prompt(facts, request, task),
-            None,
-            context or Context(),
-            agent_id=agent_id,
-            extra_system_prompt=instructions,
-        )
+        # A model that hangs (laptop asleep) must not stall her: give up after a while.
+        async with asyncio.timeout(VOICE_TIMEOUT):
+            result = await conversation.async_converse(
+                hass,
+                build_prompt(facts, request, task),
+                None,
+                context or Context(),
+                agent_id=agent_id,
+                extra_system_prompt=instructions,
+            )
         line = (result.response.speech.get("plain", {}).get("speech") or "").strip()
-    except (HomeAssistantError, ValueError) as err:
+    except TimeoutError:
+        _LOGGER.warning("Voice agent %s took over %ss, speaking the plain facts", agent_id, VOICE_TIMEOUT)
+    except Exception as err:  # noqa: BLE001 - any failure: the facts still get said
         _LOGGER.warning("Voice agent %s failed, speaking the plain facts: %s", agent_id, err)
     if line and task and echoes(line, task):
         _LOGGER.debug("Voice agent read the task back, dropped: %s", line)

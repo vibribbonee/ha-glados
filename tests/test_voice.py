@@ -80,3 +80,33 @@ def test_drop_the_announcers_line() -> None:
     reply = "The facility Announcer announced: I like kissing boys. How... unexpected."
     assert drop_repeat(reply, said) == "How... unexpected."
     assert drop_repeat("How brave.", said) == "How brave."
+
+
+async def test_a_hung_model_gives_up(hass: HomeAssistant) -> None:
+    import asyncio
+
+    async def hang(*args, **kwargs):
+        await asyncio.sleep(10)
+
+    with patch("custom_components.glados.voice.VOICE_TIMEOUT", 0.05), patch(
+        "custom_components.glados.voice.conversation.async_converse", side_effect=hang
+    ):
+        assert await async_say(hass, {"chat_agent": "conversation.x"}, "Leave now.") == "Leave now."
+
+
+async def test_announcements_take_turns(hass: HomeAssistant) -> None:
+    import asyncio
+    from custom_components.glados.announce import Announcer, AnnounceRequest
+    order: list[str] = []
+    announcer = Announcer(hass, {})
+
+    async def slow(req, context=None):
+        order.append(f"start {req.facts}")
+        await asyncio.sleep(0.01)
+        order.append(f"end {req.facts}")
+        return {"spoken": True}
+
+    announcer._announce = slow
+    await asyncio.gather(announcer.async_announce(AnnounceRequest(facts="a")),
+                         announcer.async_announce(AnnounceRequest(facts="b")))
+    assert order in (["start a", "end a", "start b", "end b"], ["start b", "end b", "start a", "end a"])

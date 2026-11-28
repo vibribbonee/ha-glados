@@ -14,6 +14,7 @@ A port of the glados_announce script, with the same rules and the same result
 
 from __future__ import annotations
 
+import asyncio
 from collections import deque
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -105,6 +106,7 @@ class Announcer:
         self.hass = hass
         self.options = {**DEFAULTS, **options}
         self.memory = memory  # for quiet mode; optional in tests
+        self._turn = asyncio.Lock()  # one announcement at a time: never talk over herself
         # What she said, or why she stayed quiet: newest first, for the sensor.
         self.history: deque[dict[str, Any]] = deque(maxlen=HISTORY)
         self.listeners: list[Callable[[], None]] = []
@@ -153,7 +155,8 @@ class Announcer:
         self, req: AnnounceRequest, context: Context | None = None
     ) -> dict[str, Any]:
         """Announce, or explain why not. Every outcome is kept in the history."""
-        return self._record(req, await self._announce(req, context))
+        async with self._turn:
+            return self._record(req, await self._announce(req, context))
 
     async def _announce(
         self, req: AnnounceRequest, context: Context | None = None

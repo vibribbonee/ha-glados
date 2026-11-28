@@ -44,6 +44,8 @@ One release instead of many small ones, so the house restarts once.
 - **One heartbeat.** Her background features run in turn on one timer; one that fails is logged once and the others carry on. A slow beat (a busy voice agent) is never piled up.
 
 ### Fixed
+- **A voice agent that fails or hangs no longer stops anything.** Any failure, and anything over 30 seconds (a laptop asleep), falls back to the plain facts, so the morning greeting and bedtime nudges are still said. Found by simulating a whole day through the heartbeat.
+- Announcements take turns, so she never talks over herself.
 - Cleaned up with a linter (unused imports, unclear logic); action icons added.
 - Settings: a section left out of a settings change keeps its values instead of falling back to the defaults.
 - Leave times read back in local time.
