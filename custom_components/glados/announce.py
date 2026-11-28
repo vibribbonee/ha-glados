@@ -92,12 +92,14 @@ def blocked_reason(
 def announcer_media_id(voice_setting: str, line: str) -> str:
     """A media-source URL that speaks the line in the Announcer's voice.
 
-    voice_setting is "tts.engine:voice", such as "tts.piper_2:announcer".
+    voice_setting is "tts.engine:voice" or "tts.engine:voice:language", such as
+    "tts.piper_2:announcer:en_US". The language defaults to en_US.
     """
-    engine, _, voice = voice_setting.partition(":")
+    engine, _, rest = voice_setting.partition(":")
+    voice, _, language = rest.partition(":")
     return (
         f"media-source://tts/{engine}?message={quote(line, safe='')}"
-        f"&language=en_US&voice={voice or 'announcer'}"
+        f"&language={language or 'en_US'}&voice={voice or 'announcer'}"
     )
 
 

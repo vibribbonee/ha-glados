@@ -97,3 +97,15 @@ async def test_user_flow(hass: HomeAssistant) -> None:
     options = result["result"].options
     assert options["chat_agent"] == "conversation.chat" and options["personality"]
     assert options["announcer_voice"] == "" and options["speaking_schedule"] == ""
+
+
+async def test_sounds_are_picked_and_stored_as_media_ids(home: Home) -> None:
+    from custom_components.glados.announce import announcer_media_id
+    from custom_components.glados.config_flow import clean_options
+    picked = clean_options({"voices": {
+        "beep_in": {"media_content_id": "media-source://media_source/local/in.mp3",
+                    "media_content_type": "audio/mpeg"},
+        "announcer_voice": "tts.piper_2:announcer:en_GB"}})
+    assert picked["beep_in"] == "media-source://media_source/local/in.mp3"
+    assert "language=en_GB&voice=announcer" in announcer_media_id(picked["announcer_voice"], "Hi.")
+    assert "language=en_US&voice=announcer" in announcer_media_id("tts.piper_2:announcer", "Hi.")

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.9.2
+
+### Better to live with
+- **Pick sounds and voices instead of typing them.** The beeps and the birthday song use Home Assistant's media picker (browse your media folder), and the Announcer voice is a dropdown of every voice your text-to-speech engines offer. Typed values still work.
+- The Announcer voice can carry its language (`tts.piper:announcer:en_GB`); it used to always be en_US.
+- README: **Open in HACS** and **Add integration** buttons.
+
 ## 0.9.1
 
 ### Fixed

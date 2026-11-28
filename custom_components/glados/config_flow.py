@@ -67,6 +67,46 @@ from .const import (
 )
 
 AGENT = selector.EntitySelector(selector.EntitySelectorConfig(domain="conversation"))
+SOUND = selector.MediaSelector(selector.MediaSelectorConfig(accept=["audio/*"]))
+
+
+def _media_id(value: Any) -> str:
+    """A picked sound is stored as its media id; typed text stays as it is."""
+    if isinstance(value, dict):
+        return str(value.get("media_content_id") or "")
+    return str(value or "")
+
+
+def _as_media(value: Any) -> dict[str, str] | None:
+    return {"media_content_id": value, "media_content_type": "music"} if value else None
+
+
+def tts_voices(hass) -> list[selector.SelectOptionDict]:
+    """Every voice of every text-to-speech engine, in the home's language family.
+
+    Empty when text-to-speech is not loaded: the field is then a text box.
+    """
+    if "tts" not in hass.config.components:
+        return []
+    try:
+        from homeassistant.components.tts.helper import get_engine_instance  # noqa: PLC0415
+    except ImportError:
+        return []
+
+    family = (hass.config.language or "en")[:2].lower()
+    found: list[selector.SelectOptionDict] = []
+    for state in hass.states.async_all("tts"):
+        engine = get_engine_instance(hass, state.entity_id)
+        if engine is None:
+            continue
+        for language in sorted(getattr(engine, "supported_languages", []) or []):
+            if not str(language).lower().startswith(family):
+                continue
+            for voice in engine.async_get_supported_voices(language) or []:
+                found.append(selector.SelectOptionDict(
+                    value=f"{state.entity_id}:{voice.voice_id}:{language}",
+                    label=f"{state.name} · {voice.name} ({language})"))
+    return found
 TEXT = selector.TextSelector()
 SWITCH = selector.BooleanSelector()
 
@@ -91,9 +131,9 @@ SECTIONS: dict[str, list[Field]] = {
         (CONF_LIVE_HOUSE, True, SWITCH, bool),
     ],
     "voices": [
-        (CONF_ANNOUNCER_VOICE, False, TEXT, str),
-        (CONF_BEEP_IN, False, TEXT, str),
-        (CONF_BEEP_OUT, False, TEXT, str),
+        (CONF_ANNOUNCER_VOICE, False, TEXT, str),  # a voice dropdown when voices are known
+        (CONF_BEEP_IN, False, SOUND, _media_id),
+        (CONF_BEEP_OUT, False, SOUND, _media_id),
         (CONF_SCHEDULE, False, selector.EntitySelector(
             selector.EntitySelectorConfig(domain="schedule")), str),
     ],
@@ -121,7 +161,7 @@ SECTIONS: dict[str, list[Field]] = {
     ],
     "nights": [
         (CONF_MORNING, True, SWITCH, bool),
-        (CONF_BIRTHDAY_SONG, False, TEXT, str),
+        (CONF_BIRTHDAY_SONG, False, SOUND, _media_id),
         (CONF_BIRTHDAY_NAMES, False, TEXT, str),
         (CONF_BEDTIME, True, SWITCH, bool),
         (CONF_SLEEP_GOAL, True, _number(4, 12, 0.5, "h"), float),
@@ -134,27 +174,38 @@ SECTIONS: dict[str, list[Field]] = {
 _STORE = {key: store for fields in SECTIONS.values() for key, _, _, store in fields}
 
 
+_SOUNDS = (CONF_BEEP_IN, CONF_BEEP_OUT, CONF_BIRTHDAY_SONG)
+
+
 def _marker(key: str, required: bool, current: dict[str, Any]) -> vol.Marker:
-    value = current.get(key)
+    value = _as_media(current.get(key)) if key in _SOUNDS else current.get(key)
     if required and value not in (None, ""):
         return vol.Required(key, default=value)
     hint = {"suggested_value": value} if value not in (None, "") else None
     return (vol.Required if required else vol.Optional)(key, description=hint)
 
 
-def _fields(fields: list[Field], current: dict[str, Any]) -> vol.Schema:
-    return vol.Schema({_marker(k, req, current): sel for k, req, sel, _ in fields})
+def _fields(fields: list[Field], current: dict[str, Any],
+            voices: list[selector.SelectOptionDict] | None = None) -> vol.Schema:
+    schema = {}
+    for key, required, sel, _ in fields:
+        if key == CONF_ANNOUNCER_VOICE and voices:
+            sel = selector.SelectSelector(selector.SelectSelectorConfig(
+                options=voices, custom_value=True, mode=selector.SelectSelectorMode.DROPDOWN))
+        schema[_marker(key, required, current)] = sel
+    return vol.Schema(schema)
 
 
 def _setup_schema(current: dict[str, Any]) -> vol.Schema:
     return _fields(SECTIONS["brain"][:3], current)
 
 
-def _options_schema(current: dict[str, Any]) -> vol.Schema:
+def _options_schema(current: dict[str, Any],
+                    voices: list[selector.SelectOptionDict] | None = None) -> vol.Schema:
     return vol.Schema({
         # Optional: a section left out keeps its defaults instead of failing the form.
         (vol.Required(name) if name == "brain" else vol.Optional(name, default={})): section(
-            _fields(fields, current), {"collapsed": name != "brain"})
+            _fields(fields, current, voices), {"collapsed": name != "brain"})
         for name, fields in SECTIONS.items()
     })
 
@@ -215,4 +266,5 @@ class GladosOptionsFlow(OptionsFlow):
         current = {**DEFAULTS, **self.config_entry.options}
         if user_input is not None:
             return self.async_create_entry(data=clean_options(user_input, current))
-        return self.async_show_form(step_id="init", data_schema=_options_schema(current))
+        return self.async_show_form(
+            step_id="init", data_schema=_options_schema(current, tts_voices(self.hass)))

@@ -55,9 +55,9 @@
               "speaking_schedule": "Speaking schedule"
             },
             "data_description": {
-              "announcer_voice": "The facility Announcer's text-to-speech voice, as engine:voice, such as tts.piper:announcer. Empty: her own voice reads the notices.",
-              "beep_in": "Media id played before she speaks, such as media-source://media_source/local/beep-in.mp3. Empty: no beep.",
-              "beep_out": "Media id played after she speaks. Empty: no beep.",
+              "announcer_voice": "The facility Announcer's text-to-speech voice: pick one from the list. Empty: her own voice reads the notices.",
+              "beep_in": "A sound played before she speaks: pick it from your media. Empty: no beep.",
+              "beep_out": "A sound played after she speaks. Empty: no beep.",
               "speaking_schedule": "She only speaks up unprompted while this schedule is on. Empty: any time, still never while someone sleeps."
             }
           },
@@ -130,7 +130,7 @@
             },
             "data_description": {
               "morning_greeting": "After a morning alarm, once they are out of bed, or the first time a light goes on in their room: the Announcer's \"in suspension for\" line, then GLaDOS with the morning briefing. Lights labelled glados_wakeup fade on while it is dark. Turn off if an automation already does this.",
-              "birthday_song": "Media id played before the birthday greeting, such as media-source://media_source/local/birthday.mp3. Empty: no song.",
+              "birthday_song": "A sound played before the birthday greeting: pick it from your media. Empty: no song.",
               "birthday_names": "Other names a person's birthday appears under in the calendar, as person: names; such as nico: Sjors, Nico; byte: Bee. Their own name always counts.",
               "bedtime_nudges": "Per person, in their room: an hour before bedtime, at bedtime, and the Announcer's last call when the lights are still on. Bedtime is their next morning alarm minus the sleep goal. Turn off if an automation already says these.",
               "sleep_goal_hours": "Hours of sleep before a morning alarm: sets bedtime.",
