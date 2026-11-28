@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **`glados.greet` takes a `satellite`**, so you can test the morning greeting and the birthday song on a chosen speaker instead of the one in your room.
 - **An offline CO2 sensor is said, not guessed.** Live house now says "CO2 sensor offline" for a room whose CO2 sensor isn't answering, so she stops calling the air normal on no data.
 
 ## 0.9.3

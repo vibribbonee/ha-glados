@@ -103,3 +103,13 @@ async def test_quiet_in_bed_in_the_dark(home: Home) -> None:
     hass.states.async_set("binary_sensor.bed_occupancy", "on", {"device_class": "occupancy"})
     hass.states.async_set("light.bedroom_main", "off")
     assert await mornings.async_greet(_nico(hass)) is None and not said
+
+
+async def test_greet_on_a_chosen_speaker(home: Home) -> None:
+    mornings, said = await _mornings(home, [
+        {"start": "2026-11-27", "end": "2026-11-28", "summary": "Sjors' birthday"}])
+    mornings.data.options = {**mornings.data.options, "birthday_song": "media-source://song.mp3"}
+    result = await mornings.async_greet(_nico(home.hass), satellite="assist_satellite.office_puck")
+    assert result["birthday"]
+    assert {c.data["entity_id"] for c in said} == {"assist_satellite.office_puck"}
+    assert said[0].data["media_id"] == "media-source://song.mp3"

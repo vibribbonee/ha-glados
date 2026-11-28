@@ -160,6 +160,7 @@ GREET_SCHEMA = vol.Schema(
         vol.Optional(ATTR_PERSON, default=""): cv.string,
         vol.Optional(ATTR_AREA, default=""): cv.string,
         vol.Optional(ATTR_PRETEND_BIRTHDAY, default=False): cv.boolean,
+        vol.Optional(ATTR_SATELLITE): cv.entity_id,
     }
 )
 TEST_SCHEMA = vol.Schema(
@@ -286,7 +287,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: GladosConfigEntry) -> bo
         memory = data().memory
         memory.forget(f"greeted {person.entity_id}")  # a test greets again
         result = await mornings.async_greet(
-            person, call.data[ATTR_AREA] or None, call.context, call.data[ATTR_PRETEND_BIRTHDAY]
+            person, call.data[ATTR_AREA] or None, call.context, call.data[ATTR_PRETEND_BIRTHDAY],
+            call.data.get(ATTR_SATELLITE),
         )
         return result or {"spoken": False, "reason": "quiet: in bed in the dark, Do Not Disturb, a video, or no speaker"}
 

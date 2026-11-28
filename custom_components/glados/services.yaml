@@ -135,3 +135,7 @@ greet:
       default: false
       selector:
         boolean:
+    satellite:
+      selector:
+        entity:
+          domain: assist_satellite

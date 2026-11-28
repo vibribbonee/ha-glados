@@ -310,6 +310,10 @@
         "pretend_birthday": {
           "name": "Pretend it is their birthday",
           "description": "Test the birthday version."
+        },
+        "satellite": {
+          "name": "Speaker",
+          "description": "Voice satellite to greet on. Empty: the one in their room."
         }
       }
     }

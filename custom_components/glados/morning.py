@@ -276,22 +276,25 @@ class Mornings:
 
     async def async_greet(
         self, person: Person, area: str | None = None, context: Context | None = None,
-        pretend_birthday: bool = False,
+        pretend_birthday: bool = False, satellite: str | None = None,
     ) -> dict[str, Any] | None:
         """Greet one person, once a day. None when already greeted or it cannot be said."""
         now = dt_util.now()
         if self._greeted(person, now):
             return None
+        if satellite:  # a test on a chosen speaker
+            area = area_of(self.hass, satellite)
         area = area or person_area(self.hass, person)
         ctx = describe(self.hass, area, None)
-        if (ctx.in_bed and ctx.dark_bedroom) or ctx.quiet or ctx.watching or not ctx.satellite:
+        speaker = satellite or ctx.satellite
+        if (ctx.in_bed and ctx.dark_bedroom) or ctx.quiet or ctx.watching or not speaker:
             return None
         name = person.name.capitalize()
         options = self.data.options
         announcer = self.data.announcer
         if pretend_birthday or await self._birthday(person):
             if song := str(options.get(CONF_BIRTHDAY_SONG) or ""):
-                await announcer._play(ctx.satellite, media_id=song, preannounce=False)
+                await announcer._play(speaker, media_id=song, preannounce=False)
             facts = await async_facts(self.hass, options, morning=True, area=area)
             plan = re.search(r"First commitment: ([^.]*)\.", facts)
             line = birthday_line(name, str(options.get(CONF_HOME_TOWN) or ""))
@@ -299,7 +302,7 @@ class Mornings:
                 line += f" Your first commitment today is {plan.group(1)}. Try to be on time."
             result = await announcer.async_announce(
                 AnnounceRequest(facts=line, voice=VOICE_GLADOS, area=area, glados_line=line,
-                                ignore_schedule=True), context)
+                                ignore_schedule=True, satellite=satellite or ""), context)
             result["birthday"] = True
         else:
             facts = await async_facts(self.hass, options, morning=True, area=area)
@@ -309,11 +312,11 @@ class Mornings:
             if slept is not None:
                 result = await announcer.async_announce(
                     AnnounceRequest(facts=suspension_line(slept), voice=VOICE_ANNOUNCER,
-                                    area=area, glados_line=spoken, ignore_schedule=True), context)
+                                    area=area, glados_line=spoken, ignore_schedule=True, satellite=satellite or ""), context)
             else:
                 result = await announcer.async_announce(
                     AnnounceRequest(facts=spoken, voice=VOICE_GLADOS, area=area,
-                                    glados_line=spoken, ignore_schedule=True), context)
+                                    glados_line=spoken, ignore_schedule=True, satellite=satellite or ""), context)
         if result.get("spoken"):
             self.data.memory.set(f"greeted {person.entity_id}", now.isoformat())
             self.data.memory.forget(f"asleep {person.entity_id}")
