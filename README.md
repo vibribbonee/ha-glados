@@ -14,9 +14,14 @@ She does what you'd ask any smart speaker: timers, lights, the weather with a cl
 
 ## Install
 
-1. In HACS, open the ⋮ menu → **Custom repositories**, and add `https://github.com/vibribbonee/ha-glados` as an **Integration**.
+[![Open in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=vibribbonee&repository=ha-glados&category=integration)
+[![Add the integration](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=glados)
+
+The first button opens this repository in HACS, in your own Home Assistant, ready to download. After the restart, the second starts the setup.
+
+1. Open this repository in HACS (first button), or add `https://github.com/vibribbonee/ha-glados` under ⋮ → **Custom repositories** as an **Integration**.
 2. Download **GLaDOS** and restart Home Assistant.
-3. Go to **Settings → Devices & services → Add integration → GLaDOS**, and pick your chat agent.
+3. Add the integration (second button, or **Settings → Devices & services → Add integration → GLaDOS**), and pick your chat agent.
 4. Open your chat agent's settings (for Ollama: **Settings → Devices & services → Ollama**, then the agent's ⚙). Under **Control Home Assistant**, tick **GLaDOS** next to **Assist**, so she gets her own tools.
 5. In **Settings → Voice assistants**, open your assistant and set its **Conversation agent** to **GLaDOS**. Pick your GLaDOS voice as its text-to-speech voice.
 
@@ -119,7 +124,7 @@ GLaDOS needs only a chat agent. Features that depend on another integration are 
 
 | Add-on | Needs | Adds |
 |---|---|---|
-| [GLaDOS trains](https://github.com/vibribbonee/ha-glados-trains) | Train departure sensors (NS works best) | Which train to catch, a heads-up, and when to leave, with live delays |
+| [GLaDOS trains](https://github.com/vibribbonee/ha-glados-trains) [![Open in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=vibribbonee&repository=ha-glados-trains&category=integration) | Train departure sensors (NS works best) | Which train to catch, a heads-up, and when to leave, with live delays |
 
 Writing one: [docs/ADDONS.md](docs/ADDONS.md).
 
