@@ -1,7 +1,11 @@
 # Changelog
 
-## Unreleased
+## 0.9.4
 
+### Better to live with
+- **A shorter morning.** The weather is said in words and only when it matters: rain, windy or stormy, snow, sunscreen weather, plus one temperature. No more wind speeds or millimetres of rain on waking. The greeting keeps to two or three short sentences.
+- **Bed without the charger gets one push.** In bed (or the bedroom dark) at night, with the phone off the charger for 10 minutes and under 60 percent, the phone gets one notification, mentioning the morning alarm it holds. She never speaks in bed. The bedtime and last-call nudges also say it.
+- **A flaky wireless pad isn't "not charging".** Pads flicker for seconds when a phone is put down, and a full or adaptive-charging phone reports "not charging" while on the pad. Only a charger gone for minutes counts.
 - **`glados.greet` takes a `satellite`**, so you can test the morning greeting and the birthday song on a chosen speaker instead of the one in your room.
 - **An offline CO2 sensor is said, not guessed.** Live house now says "CO2 sensor offline" for a room whose CO2 sensor isn't answering, so she stops calling the air normal on no data.
 

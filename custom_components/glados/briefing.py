@@ -43,6 +43,7 @@ from .voice import async_say
 
 _BATTERY = re.compile(r"^sensor\..*battery_level$")
 _CHARGER = re.compile(r"^sensor\..*charger_type$")
+_BATTERY_STATE = re.compile(r"^sensor\..*battery_state$")
 _NEXT_ALARM = re.compile(r"^sensor\..*next_alarm$")
 
 TASK_NIGHT = (
@@ -53,8 +54,9 @@ TASK_NIGHT = (
 )
 TASK_MORNING = (
     "Morning briefing. Pick only what matters for the rest of today: the next "
-    "commitment, a leave time, the weather if it changes plans. Skip everything that is "
-    "fine. Short spoken sentences, never a list. End with one dry remark of your own."
+    "commitment, a leave time, the weather only if it changes what to wear or carry. "
+    "Skip everything that is fine. They have just woken up: two or three short spoken "
+    "sentences at most, never a list, never a number they do not need. End with one dry remark of your own."
 )
 
 
@@ -135,34 +137,86 @@ async def _forecast(hass: HomeAssistant, day: date) -> dict[str, Any] | None:
     for f in (response or {}).get(pick, {}).get("forecast", []):
         at = dt_util.parse_datetime(str(f.get("datetime", "")))
         if at and dt_util.as_local(at).date() == day:
-            return f
+            unit = (state := hass.states.get(pick)) and state.attributes.get("wind_speed_unit")
+            return {**f, "_wind_unit": unit or "km/h"}
     return None
 
 
-def _weather_line(f: dict[str, Any], label: str) -> str:
-    condition = str(f.get("condition", "")).replace("partlycloudy", "partly cloudy").replace("-", " ")
-    low = f.get("templow")
-    temp = f"{round(low)} to {round(f['temperature'])}" if low is not None else f"{round(f['temperature'])}"
-    rain = f", {round(f['precipitation'], 1)} millimetres of rain" if (f.get("precipitation") or 0) > 0 else ""
-    wind = f", wind {round(f['wind_speed'])} kilometres per hour" if f.get("wind_speed") is not None else ""
-    return f"Weather {label}: {condition}, {temp} degrees{rain}{wind}."
+_RAINY = ("rainy", "pouring", "lightning-rainy", "snowy", "snowy-rainy", "hail")
+_WINDY_KMH = 30
+_STORMY_KMH = 55
+
+
+def _wind_kmh(f: dict[str, Any], unit: str) -> float:
+    speed = float(f.get("wind_speed") or 0)
+    return {"m/s": speed * 3.6, "mph": speed * 1.609, "kn": speed * 1.852}.get(unit, speed)
+
+
+def _weather_line(f: dict[str, Any], label: str, wind_unit: str = "km/h") -> str:
+    """The weather in words, only what changes what to wear or carry.
+
+    One temperature, then rain, wind or sunscreen only when there is something to
+    say: nobody needs the wind speed in kilometres per hour on waking.
+    """
+    condition = str(f.get("condition", ""))
+    high = f.get("temperature")
+    bits = [f"{round(high)} degrees"] if high is not None else []
+    rain = float(f.get("precipitation") or 0)
+    if condition.startswith("snowy"):
+        bits.append("snow")
+    elif condition in _RAINY or rain >= 1:
+        bits.append("rain")
+    elif rain >= 0.3:
+        bits.append("a chance of a shower")
+    wind = _wind_kmh(f, wind_unit)
+    if condition == "windy" or wind >= _STORMY_KMH:
+        bits.append("stormy" if wind >= _STORMY_KMH else "windy")
+    elif wind >= _WINDY_KMH:
+        bits.append("windy")
+    uv = f.get("uv_index")
+    if (uv is not None and float(uv) >= 5) or (condition == "sunny" and (high or 0) >= 25):
+        bits.append("sunscreen weather")
+    if not bits:
+        return ""
+    return f"Weather {label}: {', '.join(bits)}."
+
+
+def phone_battery(
+    hass: HomeAssistant, person: Person, settled: timedelta = timedelta(minutes=2)
+) -> int | None:
+    """Their phone's battery level when it is really off the charger; else None.
+
+    Wireless pads flicker for seconds when a phone is put down, and a full or
+    adaptive-charging phone reports "not charging" while on the pad: neither is
+    off the charger. Only a charger gone for `settled` counts.
+    """
+    now = dt_util.utcnow()
+    for device in tracker_devices(hass, person):
+        ents = device_entities(hass, device)
+        alarm = [e for e in ents if _NEXT_ALARM.match(e)]
+        battery = [e for e in ents if _BATTERY.match(e)]
+        charger = [e for e in ents if _CHARGER.match(e)]
+        if not (alarm and battery and charger):
+            continue  # only phones
+        level = hass.states.get(battery[0])
+        plug = hass.states.get(charger[0])
+        status = [hass.states.get(e) for e in ents if _BATTERY_STATE.match(e)]
+        if not (plug and level and level.state.isdigit()):
+            continue
+        if plug.state != "none" or any(s and s.state in ("charging", "full") for s in status):
+            return None
+        if now - plug.last_changed < settled:
+            return None  # a flicker, or just picked up
+        return int(level.state)
+    return None
 
 
 def _phone_warnings(hass: HomeAssistant, people: list[Person]) -> list[str]:
-    lines = []
-    for person in people:
-        for device in tracker_devices(hass, person):
-            ents = device_entities(hass, device)
-            alarm = [e for e in ents if _NEXT_ALARM.match(e)]
-            battery = [e for e in ents if _BATTERY.match(e)]
-            charger = [e for e in ents if _CHARGER.match(e)]
-            if not (alarm and battery and charger):
-                continue  # only phones
-            level = hass.states.get(battery[0])
-            if hass.states.is_state(charger[0], "none") and level and level.state.isdigit():
-                lines.append(f"{person.name.capitalize()}'s phone is at {level.state} percent "
-                             "and not charging.")
-    return lines
+    return [
+        f"{person.name.capitalize()}'s phone is at {level} percent and not charging."
+        for person in people
+        if (level := phone_battery(hass, person)) is not None
+    ]
 
 
 async def async_facts(
@@ -224,7 +278,9 @@ async def async_facts(
             parts.append(f"Planned bedtime {_hm(bt)}{passed}.")
 
     if forecast := await _forecast(hass, day):
-        parts.append(_weather_line(forecast, "today" if morning else "tomorrow"))
+        if line := _weather_line(forecast, "today" if morning else "tomorrow",
+                                 forecast.get("_wind_unit", "km/h")):
+            parts.append(line)
     return " ".join(parts)
 
 

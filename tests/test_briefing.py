@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import timedelta
+
 from unittest.mock import AsyncMock, patch
 
 from homeassistant.core import HomeAssistant, SupportsResponse
@@ -45,15 +47,16 @@ async def test_bedtime_alarm_too_late_for_the_dentist(home: Home) -> None:
     assert "All day: Birthday Yannick." in facts
     # 35 minutes routine plus half an hour for the trip: up by 07:55.
     assert "alarm at 08:30, 22.5 hours from now, which is too late: set it for 07:55" in facts
-    assert "Weather tomorrow: partly cloudy, 0 to 3 degrees" in facts
+    assert "Weather tomorrow: 3 degrees, windy." in facts
 
 
-async def test_phone_that_will_not_last(home: Home) -> None:
+async def test_phone_that_will_not_last(home: Home, freezer) -> None:
     hass = home.hass
     _calendar(hass, [])
     phone = er.async_get(hass).async_get("device_tracker.pixel_9a").device_id
     home.entity("sensor.pixel_9a_battery_level", "44", device=phone)
     home.entity("sensor.pixel_9a_charger_type", "none", device=phone)
+    freezer.tick(timedelta(minutes=3))  # off the charger, not a flicker
     facts = await async_facts(hass, OPTIONS)
     assert "Nothing timed on the calendars tomorrow." in facts
     assert "Nico has no alarm set, and none is needed." in facts

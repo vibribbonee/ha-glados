@@ -72,8 +72,10 @@ PENDING_KEY = "morning pending"
 TASK = (
     "Good morning, said directly to {name}, as you, never in the third person. In this "
     "order: first any birthdays and other all-day items today; then the first commitment "
-    "if there is one; then the weather with one clothing tip. Two to four short "
-    "sentences, ending with one dry remark about them finally being conscious."
+    "if there is one; then the weather only if it changes what to wear or carry, in "
+    "words, never wind speeds or rain amounts. They have just woken up, so keep it "
+    "brief: two or three short sentences, the last a dry remark about them finally "
+    "being conscious."
 )
 
 
