@@ -49,18 +49,17 @@ API_VERSION = 1
 
 __all__ = [
     "API_VERSION",
-    "Addon",
-    "AnnounceRequest",
-    "GladosTool",
-    "Person",
     "VOICE_ANNOUNCER",
     "VOICE_GLADOS",
+    "Addon",
+    "AnnounceRequest",
+    "GladosTool",  # noqa: F822  (provided lazily by __getattr__ below)
+    "Person",
     "async_announce",
     "async_register_addon",
     "clean_for_speech",
     "days_away",
     "glados_data",
-    "who_is_asking",
     "parse_time",
     "people_home",
     "person_area",
@@ -69,6 +68,7 @@ __all__ = [
     "resolve_date",
     "resolve_moment",
     "spoken_date",
+    "who_is_asking",
 ]
 
 

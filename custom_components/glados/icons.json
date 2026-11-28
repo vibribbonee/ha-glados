@@ -1,0 +1,34 @@
+{
+  "services": {
+    "clean_text": {
+      "service": "mdi:text-box-check"
+    },
+    "say": {
+      "service": "mdi:robot-angry"
+    },
+    "room_context": {
+      "service": "mdi:home-search"
+    },
+    "announce": {
+      "service": "mdi:bullhorn"
+    },
+    "who": {
+      "service": "mdi:account-search"
+    },
+    "remember": {
+      "service": "mdi:file-document-edit"
+    },
+    "recall": {
+      "service": "mdi:file-search"
+    },
+    "test_announcement": {
+      "service": "mdi:bullhorn-variant"
+    },
+    "briefing": {
+      "service": "mdi:weather-night"
+    },
+    "greet": {
+      "service": "mdi:weather-sunset-up"
+    }
+  }
+}

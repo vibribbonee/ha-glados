@@ -17,7 +17,7 @@ leave helpers keep working.
 
 from __future__ import annotations
 
-from datetime import datetime, time, timedelta
+from datetime import datetime, timedelta
 import re
 from typing import TYPE_CHECKING, Any, override
 
@@ -42,7 +42,6 @@ from .const import (
     CONF_ROUTINE_MINUTES,
     DOMAIN,
     LABEL_GLADOS,
-    LABEL_LEFT_ON,
     MORNING_ENDS_HOUR,
 )
 from .dates import days_away, parse_time, resolve_date, resolve_moment, spoken_date
@@ -65,10 +64,11 @@ from .speech import clean_for_speech
 if TYPE_CHECKING:
     from . import GladosData
 
+from .people import CLEARED  # noqa: F401  (re-exported: the cleared leave time)
+
 API_ID = DOMAIN
 API_NAME = "GLaDOS"
 REMINDER_NOTE = "Reminder set by voice"
-from .people import CLEARED  # noqa: E402  (re-exported for callers and tests)
 FILE_PROMPT_CHARS = 300
 MAX_DAYS_AHEAD = 62
 
@@ -516,7 +516,7 @@ class SetAlarm(GladosTool):
             ring_on = "phone"
         label = (args.get("label") or "").strip()
         if ring_on in ("phone", "both"):
-            service, sensor = phones[0]
+            service, _ = phones[0]
             extras = (
                 f"android.intent.extra.alarm.HOUR:{at.hour},"
                 f"android.intent.extra.alarm.MINUTES:{at.minute},"

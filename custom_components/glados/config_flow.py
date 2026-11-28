@@ -169,7 +169,7 @@ def clean_options(
     for key, value in user_input.items():
         if key in SECTIONS and isinstance(value, dict):
             if value:
-                for field, required, _, store in SECTIONS[key]:
+                for field, required, _, _store in SECTIONS[key]:
                     if not required and field not in value:
                         data[field] = ""
             data.update(value)

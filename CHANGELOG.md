@@ -44,6 +44,7 @@ One release instead of many small ones, so the house restarts once.
 - **One heartbeat.** Her background features run in turn on one timer; one that fails is logged once and the others carry on. A slow beat (a busy voice agent) is never piled up.
 
 ### Fixed
+- Cleaned up with a linter (unused imports, unclear logic); action icons added.
 - Settings: a section left out of a settings change keeps its values instead of falling back to the defaults.
 - Leave times read back in local time.
 - An announcement for someone known to be awake (a bedtime nudge) is no longer silenced by the "before an alarm, people may be asleep" rule.

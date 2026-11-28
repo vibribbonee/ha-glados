@@ -108,7 +108,7 @@ async def _forecast(hass: HomeAssistant, day: date) -> dict[str, Any] | None:
             "weather", "get_forecasts", {"entity_id": pick, "type": "daily"},
             blocking=True, return_response=True,
         )
-    except Exception:  # noqa: BLE001 - a forecast is a nice-to-have
+    except Exception:
         return None
     for f in (response or {}).get(pick, {}).get("forecast", []):
         at = dt_util.parse_datetime(str(f.get("datetime", "")))

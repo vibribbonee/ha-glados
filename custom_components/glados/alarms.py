@@ -140,7 +140,7 @@ class AlarmClock:
             self._save(keep)
         return said
 
-    def _phone_alarm(self, alarm: Alarm) -> datetime | None | str:
+    def _phone_alarm(self, alarm: Alarm) -> datetime | str | None:
         """The phone's next alarm: a time, None if unset, "gone" if unavailable."""
         state = self.hass.states.get(alarm.phone_sensor) if alarm.phone_sensor else None
         if state is None or state.state in ("unavailable", "unknown"):

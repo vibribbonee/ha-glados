@@ -105,9 +105,11 @@ class Character:
                 if result := await self.async_comfort(ctx, now):
                     said.append(result)
         if self.options.get(CONF_NOTICES, True):
-            if result := await self.async_late_notice(now):
-                said.append(result)
-            elif random.randrange(NOTICE_ODDS) == 0 and (result := await self.async_notice(rooms, now)):
+            # The late notice when it is due; otherwise, now and then, a daytime one.
+            result = await self.async_late_notice(now)
+            if result is None and random.randrange(NOTICE_ODDS) == 0:
+                result = await self.async_notice(rooms, now)
+            if result:
                 said.append(result)
         if self.options.get(CONF_IDLE, True) and random.randrange(IDLE_ODDS) == 0:
             if result := await self.async_idle(rooms, now):
@@ -161,7 +163,7 @@ class Character:
         try:
             reply = await self.hass.services.async_call(
                 "assist_satellite", "ask_question", data, blocking=True, return_response=True)
-        except Exception:  # noqa: BLE001 - no answer is an answer
+        except Exception:
             reply = None
         answer = (reply or {}).get("id") or "none"
         if answer == "yes":

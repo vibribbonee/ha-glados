@@ -50,7 +50,7 @@ class Heartbeat:
                 try:
                     await tick(now)
                     self.errors.pop(name, None)
-                except Exception as err:  # noqa: BLE001 - one feature must not stop the rest
+                except Exception as err:
                     if self.errors.get(name) != repr(err):
                         _LOGGER.exception("GLaDOS %s failed; the other features carry on", name)
                     self.errors[name] = repr(err)
